@@ -1,0 +1,12 @@
+{
+  "name": "component-viewer",
+  "version": "1.0.0",
+  "description": "jQuery plugin for attachment and media preview in an overlay",
+  "scripts": {
+    "minify": "terser component-viewer.js -o component-viewer.min.js -c -m",
+    "build": "npm run minify"
+  },
+  "devDependencies": {
+    "terser": "^5.36.0"
+  }
+}
