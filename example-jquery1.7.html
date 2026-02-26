@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComponentViewer – Example (jQuery 1.7.1)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="component-viewer.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #333; line-height: 1.6; padding: 24px; }
+    .page-title { text-align: center; margin-bottom: 32px; }
+    .page-title h1 { font-size: 24px; } .page-title p { color: #888; font-size: 14px; }
+    .post { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.1); max-width: 680px; margin: 0 auto 24px; overflow: hidden; }
+    .post-header { padding: 16px 20px; border-bottom: 1px solid #eee; overflow: hidden; }
+    .post-header::after { content: ''; display: table; clear: both; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; float: left; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; margin-right: 12px; }
+    .post-author { font-weight: 600; font-size: 14px; } .post-time { font-size: 12px; color: #999; }
+    .post-body { padding: 16px 20px; font-size: 14px; }
+    .post-attachments { padding: 0 20px 16px; overflow: hidden; }
+    .post-attachments .att { display: inline-block; width: 130px; height: 100px; margin: 0 8px 8px 0; vertical-align: top; text-align: center; border-radius: 8px; background: #f5f5f5; cursor: pointer; overflow: hidden; font-size: 12px; font-weight: 600; color: #666; text-decoration: none; border: none; }
+    .post-attachments .att:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .post-attachments .att img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .post-attachments .att .fa { font-size: 22px; opacity: .5; display: block; margin-top: 24px; }
+    .post-attachments .att .att-label { font-size: 11px; color: #888; display: block; margin-top: 4px; }
+    .section-title { max-width: 680px; margin: 40px auto 10px; font-size: 16px; font-weight: 700; padding-bottom: 6px; border-bottom: 2px solid #ddd; }
+    .section-desc { max-width: 680px; margin: 0 auto 16px; font-size: 14px; color: #666; }
+    .jq-version { max-width: 680px; margin: 0 auto 20px; padding: 12px 16px; background: #e8f4fd; border: 1px solid #b8daff; border-radius: 8px; font-size: 14px; }
+    .jq-version strong { color: #004085; }
+  </style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>ComponentViewer — jQuery 1.7.1</h1>
+  <p>This example uses <strong>jQuery 1.7.1</strong>, <strong>jPlayer 2.9.2</strong>, and <strong>PDF.js</strong> to show the plugin works in legacy environments.</p>
+</div>
+
+<div class="jq-version">
+  <strong>Loaded:</strong> jQuery <span id="jq-ver">—</span> | jPlayer (video/audio) | PDF.js (PDF). Theme toggle, image zoom/pan, and all built-in renderers are available.
+</div>
+
+<div class="section-title">Built-in renderers (image, video, audio, PDF)</div>
+<p class="section-desc">
+  Click any attachment to open the viewer. Image: zoom/pan. Video &amp; audio: jPlayer. PDF: pdf.js with page nav and thumbnails.
+  Use the theme toggle (sun/moon) in the header to switch dark/light mode.
+</p>
+
+<div class="post" id="post-legacy">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa fa-user"></i></div>
+    <div>
+      <div class="post-author">jQuery 1.7.1 compatibility demo</div>
+      <div class="post-time">Image, video, audio, PDF</div>
+    </div>
+  </div>
+  <div class="post-body">Click any item below to preview. All features work with jQuery 1.7.1.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Mountain.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa fa-film"></i><span class="att-label">Demo.mp4</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Horse.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3" data-size="45 KB"><i class="fa fa-headphones"></i><span class="att-label">Horse.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa fa-file-pdf-o"></i><span class="att-label">Spec.pdf</span></div>
+    <div class="att cv-item" data-type="xlsx" data-title="Data.xlsx" data-ext="XLSX" data-size="2.4 MB" data-download="#"><i class="fa fa-file-excel-o"></i><span class="att-label">Data.xlsx</span></div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jplayer/2.9.2/jplayer/jquery.jplayer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="component-viewer.js"></script>
+
+<script>
+(function() {
+  var jqVer = typeof jQuery !== 'undefined' ? jQuery.fn.jquery : '—';
+  document.getElementById('jq-ver').textContent = jqVer;
+
+  $('#post-legacy').componentViewer({
+    theme: 'dark',
+    themeToggle: true,
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onDownload: function(item) {
+      var url = item.downloadUrl || item.src;
+      if (url && url !== '#') {
+        var a = document.createElement('a');
+        a.href = url; a.download = item.title || ''; a.target = '_blank';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+    },
+    onOpen: function(item) { console.log('Opened:', item.type, item.title); },
+    onClose: function(item) { console.log('Closed:', item.title); }
+  });
+})();
+</script>
+</body>
+</html>

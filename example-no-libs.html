@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComponentViewer – Example (no jPlayer / pdf.js)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="component-viewer.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #333; line-height: 1.6; padding: 24px; }
+    .page-title { text-align: center; margin-bottom: 32px; }
+    .page-title h1 { font-size: 24px; } .page-title p { color: #888; font-size: 14px; }
+    .post { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.1); max-width: 680px; margin: 0 auto 24px; overflow: hidden; }
+    .post-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; }
+    .post-author { font-weight: 600; font-size: 14px; } .post-time { font-size: 12px; color: #999; }
+    .post-body { padding: 16px 20px; font-size: 14px; }
+    .post-attachments { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding: 0 20px 16px; }
+    .att { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; height: 100px; border-radius: 8px; background: #f5f5f5; cursor: pointer; overflow: hidden; transition: transform .15s, box-shadow .15s; font-size: 12px; font-weight: 600; color: #666; text-decoration: none; }
+    .att:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .att img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .att i { font-size: 22px; opacity: .5; } .att .att-label { font-size: 11px; color: #888; }
+    .section-title { max-width: 680px; margin: 40px auto 10px; font-size: 16px; font-weight: 700; padding-bottom: 6px; border-bottom: 2px solid #ddd; }
+    .section-desc { max-width: 680px; margin: 0 auto 16px; font-size: 14px; color: #666; }
+  </style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>ComponentViewer — No jPlayer / pdf.js</h1>
+  <p>Only jQuery + component-viewer.js are loaded. Video and audio use native HTML5; PDF uses an iframe.</p>
+</div>
+
+<div class="section-title">Native HTML5 &amp; iframe fallbacks</div>
+<p class="section-desc">
+  This page does <strong>not</strong> include jPlayer or pdf.js. The plugin falls back to:
+  <strong>native <code>&lt;video&gt;</code></strong> and <strong><code>&lt;audio&gt;</code></strong> with browser controls,
+  and <strong><code>&lt;iframe&gt;</code></strong> for PDF (browser’s built-in viewer). Click any attachment to preview.
+</p>
+
+<div class="post" id="post-no-libs">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Fallback demo</div><div class="post-time">No jPlayer, no pdf.js</div></div>
+  </div>
+  <div class="post-body">Image → zoom/pan. Video → native &lt;video controls&gt;. Audio → native &lt;audio controls&gt;. PDF → iframe.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Video</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Horse.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3"><i class="fa-solid fa-headphones"></i><span class="att-label">Audio</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">PDF</span></div>
+  </div>
+</div>
+
+<!-- No jPlayer, no pdf.js — only jQuery and component-viewer -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="component-viewer.js"></script>
+<script>
+(function() {
+  $('#post-no-libs').componentViewer({
+    toolbar: { download: true, zoom: true }
+  });
+})();
+</script>
+</body>
+</html>

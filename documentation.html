@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComponentViewer — API Documentation</title>
+  <style>
+    :root { --bg: #f6f8fa; --sidebar-bg: #24292f; --sidebar-text: #e6edf3; --accent: #0969da; --code-bg: #1e1e1e; --code-fg: #d4d4d4; --border: #d0d7de; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #24292f; background: var(--bg); }
+    .layout { display: flex; min-height: 100vh; }
+    nav { width: 280px; flex-shrink: 0; background: var(--sidebar-bg); color: var(--sidebar-text); padding: 16px 0; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+    nav h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: rgba(255,255,255,.6); padding: 8px 20px; margin-top: 16px; }
+    nav h2:first-child { margin-top: 0; }
+    nav a { display: block; padding: 6px 20px; color: var(--sidebar-text); text-decoration: none; font-size: 13px; }
+    nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+    nav a.nav-sub { padding-left: 32px; font-size: 12px; color: rgba(230,237,243,.9); }
+    nav a.nav-sub:hover { color: #fff; }
+    main { flex: 1; padding: 32px 48px 64px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .subtitle { color: #57606a; font-size: 16px; margin-bottom: 24px; }
+    h2 { font-size: 22px; font-weight: 600; margin: 32px 0 16px; color: #24292f; }
+    h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+    h4 { font-size: 15px; font-weight: 600; margin: 18px 0 8px; color: #24292f; }
+    p { margin-bottom: 12px; }
+    ul, ol { margin: 12px 0 12px 24px; }
+    li { margin-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; background: #fff; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f6f8fa; font-weight: 600; color: #24292f; }
+    tr:last-child td { border-bottom: 0; }
+    code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace; font-size: 13px; background: rgba(175,184,193,.2); padding: 2px 6px; border-radius: 4px; }
+    pre { background: var(--code-bg); color: var(--code-fg); padding: 16px; border-radius: 6px; overflow-x: auto; margin: 16px 0; font-size: 13px; line-height: 1.5; }
+    pre code { background: none; padding: 0; color: inherit; }
+    .kw { color: #ff7b72; }
+    .str { color: #a5d6ff; }
+    .fn { color: #d2a8ff; }
+    .cm { color: #8b949e; }
+    .num { color: #79c0ff; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .section { scroll-margin-top: 24px; padding-bottom: 32px; margin-bottom: 32px; }
+    main h3 { scroll-margin-top: 24px; }
+    .section > hr.section-end { margin: 24px 0 0 0; padding: 0; border: none; border-top: 1px solid var(--border); }
+    .anchor { display: block; position: relative; top: -24px; }
+    .note { background: #ddf4ff; border: 1px solid #54aeff; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 13px; }
+    .note strong { color: #0969da; }
+    pre[class*="language-"] { margin: 16px 0; }
+    code[class*="language-"] { font-size: 13px; }
+    .code-block-wrapper { position: relative; margin: 16px 0; }
+    .code-block-wrapper pre { margin: 0; padding-top: 2.5rem; }
+    .copy-code-btn { position: absolute; top: 6px; right: 8px; padding: 6px 12px; font-size: 12px; font-family: inherit; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,.12); color: var(--code-fg); border: 1px solid rgba(255,255,255,.2); z-index: 1; }
+    .copy-code-btn:hover { background: rgba(255,255,255,.2); }
+    .copy-code-btn.copied { background: rgba(40,167,69,.4); border-color: #2ea043; }
+    .doc-search-wrap { padding: 12px 16px; position: sticky; top: 0; background: var(--sidebar-bg); z-index: 10; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .doc-search-wrap input { width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(0,0,0,.2); color: var(--sidebar-text); outline: none; }
+    .doc-search-wrap input::placeholder { color: rgba(230,237,243,.5); }
+    .doc-search-wrap input:focus { border-color: var(--accent); }
+    .doc-search-hidden { display: none !important; }
+    .doc-no-results { padding: 24px 20px; color: rgba(230,237,243,.7); font-size: 13px; display: none; }
+    .doc-no-results.visible { display: block; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <div class="doc-search-wrap">
+        <input type="text" id="doc-search" class="doc-search-input" placeholder="Search documentation..." autocomplete="off" aria-label="Search documentation" />
+      </div>
+      <p id="doc-no-results" class="doc-no-results" aria-live="polite">No matching sections.</p>
+      <h2>Documentation</h2>
+      <a href="#overview">Overview</a>
+      <a href="#demo">Demo</a>
+
+      <h2>Getting Started</h2>
+      <a href="#getting-started">Getting Started</a>
+      <a href="#installation" class="nav-sub">Installation</a>
+      <a href="#quick-start" class="nav-sub">Quick start</a>
+      <a href="#building-with-plugin" class="nav-sub">Building with the plugin</a>
+      <a href="#file-structure" class="nav-sub">File structure</a>
+
+      <h2>Configuration</h2>
+      <a href="#options">Options reference</a>
+      <a href="#options-general" class="nav-sub">General options</a>
+      <a href="#options-pdf" class="nav-sub">PDF options</a>
+      <a href="#options-media" class="nav-sub">Media (jPlayer)</a>
+      <a href="#options-callbacks" class="nav-sub">Data and callbacks</a>
+      <a href="#options-wcag" class="nav-sub">Accessibility (WCAG)</a>
+      <a href="#options-carousel" class="nav-sub">Carousel</a>
+      <a href="#options-stage-only" class="nav-sub">Stage only</a>
+      <a href="#options-slideshow" class="nav-sub">Slideshow</a>
+      <a href="#poll-options" class="nav-sub">Poll options</a>
+      <a href="#i18n">I18N</a>
+
+      <h2>Data &amp; Rendering</h2>
+      <a href="#item-data">Item data</a>
+      <a href="#content-types">Content types</a>
+      <a href="#toolbar">Toolbar</a>
+
+      <h2>API &amp; Integration</h2>
+      <a href="#callbacks">Callbacks (lifecycle)</a>
+      <a href="#public-api">Public API</a>
+      <a href="#accessibility">Accessibility</a>
+      <a href="#responsiveness-gestures">Responsiveness &amp; gestures</a>
+      <a href="#security">Security</a>
+      <a href="#browser-support">Browser support</a>
+      <a href="#examples">Examples</a>
+    </nav>
+    <main>
+      <h1>ComponentViewer</h1>
+      <p class="subtitle">API documentation — jQuery plugin for attachment and media preview in an overlay</p>
+
+      <section id="overview" class="section">
+        <h2>Overview</h2>
+        <p>ComponentViewer is a jQuery plugin that opens attachments (images, video, audio, PDF, inline content, and more) in a shared full-screen overlay with a consistent header, footer, and toolbar. It is designed for <strong>feed- or post-style UIs</strong> where each container (e.g. a post or card) has its own set of items; the plugin is instantiated <strong>per container</strong>, and one global overlay is reused.</p>
+        <p>Features include:</p>
+        <ul>
+          <li>Multiple content types: image (with zoom/pan), video, audio, PDF, inline/code, error, HTML, and unsupported fallback</li>
+          <li>Configurable toolbar with built-in Download and zoom, plus custom <code>toolbarItems</code> and <code>onToolbar</code></li>
+          <li>Optional poll UI (radio/checkbox) above the toolbar for items with <code>pollOptionLabel</code></li>
+          <li>Dark/light theme with optional theme toggle</li>
+          <li>Optional WCAG behavior: focus trap, focus save/restore, ARIA dialog semantics</li>
+          <li>Loop on/off and optional counter visibility</li>
+        </ul>
+        <p><strong>License:</strong> MIT</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="demo" class="section">
+        <h2>Demo</h2>
+        <p>Try the plugin in your browser with the full example page. It includes all content types (image, video, audio, PDF, inline, error, HTML), toolbar customisation, themes, poll options, loop and counter options, and image failure handling.</p>
+        <p><strong><a href="example.html">Open example.html</a></strong> — open this file in a browser to see multiple demo cases. Use the programmatic API buttons at the bottom to open specific items (e.g. Case 1: Image, Case 2: PDF, Case 14: Invalid URL).</p>
+        <p>The example page uses jQuery 3.7, jPlayer, and PDF.js (loaded from CDN). For a minimal setup without jPlayer/PDF.js, see <a href="example-no-libs.html">example-no-libs.html</a>. For jQuery 1.7 compatibility, see <a href="example-jquery1.7.html">example-jquery1.7.html</a>. To test PDF rendering with <strong>PDF.js 2.2.228</strong>, open <a href="example-pdf-2.2.html">example-pdf-2.2.html</a>. To test with <strong>jPlayer 2.5.0</strong>, open <a href="example-jplayer-2.5.html">example-jplayer-2.5.html</a>.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="getting-started" class="section">
+        <h2>Getting Started</h2>
+
+        <h3 id="installation">Installation</h3>
+        <p><strong>Required:</strong> jQuery (1.7+ or 2.x / 3.x).</p>
+        <p><strong>Optional:</strong></p>
+        <ul>
+          <li><a href="https://jplayer.org/">jPlayer</a> — for rich video/audio playback. If not loaded, the plugin falls back to native <code>&lt;video&gt;</code> / <code>&lt;audio&gt;</code>.</li>
+          <li><a href="https://mozilla.github.io/pdf.js/">PDF.js</a> — for PDF rendering with page navigation, thumbnails, zoom, rotate. If not loaded, the plugin falls back to an iframe.</li>
+        </ul>
+        <p>Include the plugin and stylesheet after jQuery:</p>
+        <pre><code class="language-markup">&lt;link rel="stylesheet" href="component-viewer.css" /&gt;
+&lt;script src="jquery.min.js"&gt;&lt;/script&gt;
+&lt;!-- Optional: jPlayer, PDF.js --&gt;
+&lt;script src="component-viewer.js"&gt;&lt;/script&gt;</code></pre>
+
+        <h3 id="quick-start">Quick start</h3>
+        <p>1. Mark up your items with a common selector (default <code>.cv-item</code>) and use <code>data-*</code> for type, source, and title:</p>
+        <pre><code class="language-markup">&lt;div id="my-gallery"&gt;
+  &lt;a class="cv-item" data-type="image" data-title="Photo.jpg" href="https://example.com/photo.jpg"&gt;
+    &lt;img src="https://example.com/thumb.jpg" alt="" /&gt;
+  &lt;/a&gt;
+  &lt;div class="cv-item" data-type="pdf" data-title="Doc.pdf" data-src="https://example.com/doc.pdf" data-ext="PDF"&gt;PDF&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+        <p>2. Initialize the viewer on the container:</p>
+        <pre><code class="language-javascript">$('#my-gallery').componentViewer({
+  toolbar: { download: true, zoom: true },
+  pdf: { workerSrc: 'path/to/pdf.worker.min.js' }
+});</code></pre>
+        <p>3. Click any item to open it in the overlay; use prev/next to move between items.</p>
+
+        <h3 id="building-with-plugin">Building with the plugin</h3>
+        <p>To integrate ComponentViewer into your app:</p>
+        <ol>
+          <li><strong>Choose a container</strong> — e.g. the element that wraps one post or one set of attachments.</li>
+          <li><strong>Ensure each clickable attachment</strong> is a direct or nested element matching <code>selector</code> (default <code>.cv-item</code>).</li>
+          <li><strong>Provide item data</strong> — either via <code>data-type</code>, <code>data-src</code> / <code>href</code>, <code>data-title</code>, etc., or via the <code>itemData</code> callback for full control.</li>
+          <li><strong>Call <code>$(container).componentViewer(options)</code></strong> once per container. Each container gets its own list of items (all elements matching the selector inside it) and its own index; the overlay is shared.</li>
+          <li><strong>Optional:</strong> Use <code>onRender</code> to render custom content and return a custom toolbar; use <code>onToolbar</code> to modify the built-in toolbar; use <code>onDownload</code> to customize download behavior.</li>
+        </ol>
+
+        <h3 id="file-structure">File structure</h3>
+        <p>The ComponentViewer project includes the following files:</p>
+        <pre><code class="language-text">component-viewer-v2/
+├── component-viewer.js      # Plugin script (jQuery plugin, overlay, built-in renderers)
+├── component-viewer.css     # Styles for overlay, header, stage, toolbar, carousel, etc.
+├── documentation.html       # API documentation (this file)
+├── example.html             # Full demo with all content types and options
+├── example-no-libs.html    # Minimal demo without jPlayer/PDF.js
+├── example-jquery1.7.html   # Demo for jQuery 1.7.x compatibility
+├── example-jplayer-2.5.html # Demo with jPlayer 2.5.0 for video/audio
+└── README.md                # Project overview and usage</code></pre>
+        <table>
+          <thead><tr><th>File</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>component-viewer.js</code></td><td>Main plugin: overlay UI, keyboard/click handling, built-in renderers (image, video, audio, PDF, inline, HTML, error), toolbar resolution, carousel, slideshow, stage-only mode.</td></tr>
+            <tr><td><code>component-viewer.css</code></td><td>Layout and theme styles for the overlay, shell, header, footer, stage, nav buttons, carousel, zoom widget, and light/dark theme.</td></tr>
+            <tr><td><code>documentation.html</code></td><td>API reference and configuration options.</td></tr>
+            <tr><td><code>example.html</code></td><td>Comprehensive examples (images, video, audio, PDF, inline, carousel, slideshow, stage-only, etc.) with programmatic API buttons.</td></tr>
+            <tr><td><code>example-no-libs.html</code></td><td>Minimal setup using only jQuery; native video/audio and iframe fallback for PDF.</td></tr>
+            <tr><td><code>example-jquery1.7.html</code></td><td>Same as example.html but with jQuery 1.7.1 for older browser support.</td></tr>
+            <tr><td><code>example-jplayer-2.5.html</code></td><td>Demo with jPlayer 2.5.0 for video and audio playback.</td></tr>
+            <tr><td><code>README.md</code></td><td>Quick start and usage summary.</td></tr>
+          </tbody>
+        </table>
+        <hr class="section-end" />
+      </section>
+
+      <section id="options" class="section">
+        <h2>Options reference</h2>
+        <p>All options are optional. Defaults are available at <code>$.fn.componentViewer.defaults</code>. Pass an object to <code>componentViewer(options)</code> to override.</p>
+
+        <h3 id="options-general">General options</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>selector</code></td><td>string</td><td><code>'.cv-item'</code></td><td>CSS selector for items inside the container. Each matching element becomes one item.</td></tr>
+            <tr><td><code>loop</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, prev from first goes to last and next from last goes to first. If <code>false</code>, prev/next buttons are hidden on the first and last item respectively.</td></tr>
+            <tr><td><code>overlayClose</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, clicking the overlay backdrop closes the viewer.</td></tr>
+            <tr><td><code>swipeToClose</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, a downward touch swipe on the stage (e.g. on mobile) closes the overlay. Only has effect when <code>overlayClose</code> is true. Does not affect desktop.</td></tr>
+            <tr><td><code>keyboardNav</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, Escape closes the overlay and Left/Right arrow keys move to prev/next item.</td></tr>
+            <tr><td><code>swipeNav</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, horizontal touch swipe on the stage (e.g. on mobile) moves to prev/next item. On images at zoom 1, swipe is used for navigation; when zoomed in, single-finger touch remains pan. On desktop, use prev/next buttons or arrow keys. Does not affect keyboard or button navigation.</td></tr>
+            <tr><td><code>canShowTooltip</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, a custom tooltip is shown on hover for header/footer/toolbar buttons (close, fullscreen, theme, carousel, nav, zoom, download, PDF/video/audio controls). Tooltips use a hover-based mechanism (not the <code>title</code> attribute): they appear on mouseenter and hide on mouseleave. For custom toolbar items, if <code>label</code> is set it is used as the tooltip; if not, no tooltip is shown for that item. Set to <code>false</code> to disable all tooltips.</td></tr>
+            <tr><td><code>showCounter</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the header shows the counter (e.g. "1 / 6"). Set to <code>false</code> to hide it.</td></tr>
+            <tr><td><code>preloadAdjacentImages</code></td><td>boolean</td><td><code>true</code></td><td>When <code>true</code>, the next and previous items are preloaded if they are images, so navigating to them is instant (Colorbox-style). Set to <code>false</code> to disable.</td></tr>
+            <tr><td><code>stageOnly</code></td><td>object \| boolean</td><td><code>{ enabled: false, hideNavigation: false }</code></td><td>When <code>enabled</code> is <code>true</code>, the overlay shows only the center stage and prev/next navigation (unless <code>hideNavigation</code> is <code>true</code>). Header and footer are hidden. Close with Escape or backdrop. See <a href="#options-stage-only">Stage only</a>. Passing <code>true</code> is equivalent to <code>{ enabled: true }</code>.</td></tr>
+            <tr><td><code>carousel</code></td><td>object</td><td><code>{ enabled: false, navThreshold: 4 }</code></td><td>Carousel options: a strip of thumbnails below the stage. See <a href="#options-carousel">Carousel</a> for the full table.</td></tr>
+            <tr><td><code>slideshow</code></td><td>object \| <code>null</code></td><td><code>null</code></td><td>When set to an object with <code>enabled: true</code>, the viewer auto-advances to the next item. Options: <code>interval</code> (seconds, default 4), <code>autoStart</code> (default <code>true</code>), <code>advanceMedia</code>: <code>'interval'</code> or <code>'onEnd'</code>, <code>showProgress</code> (default <code>false</code>, set <code>true</code> for a progress bar). A &quot;Play slideshow&quot; / &quot;Pause slideshow&quot; toolbar button is shown unless <code>hideSlideshowButton: true</code> and <code>autoStart: true</code>. See <a href="#options-slideshow">Slideshow</a>.</td></tr>
+            <tr><td><code>theme</code></td><td>string</td><td><code>'dark'</code></td><td>Initial theme: <code>'dark'</code> or <code>'light'</code>.</td></tr>
+            <tr><td><code>themeToggle</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the header shows a button to toggle between dark and light theme.</td></tr>
+            <tr><td><code>fullscreen</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the header shows a button to toggle overlay fullscreen (native Fullscreen API). Set to <code>false</code> to hide. This is separate from video/audio fullscreen and does not affect it.</td></tr>
+            <tr><td><code>toolbar</code></td><td>object</td><td><code>{ download: true, zoom: true }</code></td><td>Toolbar toggles: <code>download</code> adds the Download button when applicable; <code>zoom</code> shows the zoom widget for image items. See <a href="#toolbar">Toolbar</a>.</td></tr>
+            <tr><td><code>zoom</code></td><td>object</td><td><code>{ min: 1, max: 5, step: 0.01, wheelStep: 0.15, showPercentage: false, onZoom: null }</code></td><td>Image zoom limits and behavior. <code>min</code>/<code>max</code>/<code>step</code> for the slider; <code>wheelStep</code> for mouse wheel; <code>showPercentage</code> to show e.g. &quot;150%&quot;; <code>onZoom(zoomLevel, item, viewer)</code> callback. See <a href="#toolbar">Toolbar</a>.</td></tr>
+            <tr><td><code>toolbarItems</code></td><td>array</td><td><code>[]</code></td><td>Custom toolbar entries (objects with <code>id</code>, <code>icon</code>, <code>label</code>, <code>onClick</code>, etc., or <code>'separator'</code>, or DOM nodes). Merged with the renderer toolbar. See <a href="#toolbar">Toolbar</a>.</td></tr>
+            <tr><td><code>pdf</code></td><td>object</td><td><code>{ workerSrc: null, cMapUrl: null, cMapPacked: true, annotations: true, autoFit: true, autoFitMaxScale: 2.5 }</code></td><td>PDF.js and rendering. <code>workerSrc</code> is required for PDF.js. See <a href="#options-pdf">PDF options</a>.</td></tr>
+            <tr><td><code>supportedVideoFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated jPlayer video format names (e.g. <code>'m4v, webmv'</code>). If <code>null</code>, derived from file extension. See <a href="#options-media">Media (jPlayer)</a>.</td></tr>
+            <tr><td><code>supportedAudioFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated jPlayer audio format names (e.g. <code>'mp3, oga'</code>). If <code>null</code>, derived from file extension. See <a href="#options-media">Media (jPlayer)</a>.</td></tr>
+            <tr><td><code>itemData</code></td><td>function</td><td><code>null</code></td><td><code>function($el, defaultItem)</code> — returns the item object for the given element. See <a href="#options-callbacks">Data and callbacks</a>.</td></tr>
+            <tr><td><code>wcag</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, enables focus trap, focus save/restore, ARIA dialog semantics, and button aria-labels. See <a href="#options-wcag">Accessibility (WCAG)</a>.</td></tr>
+            <tr><td><code>pollOption</code></td><td>object</td><td><code>null</code></td><td>When set with <code>enabled: true</code>, items with <code>pollOptionLabel</code> show a row above the toolbar with radio/checkbox. See <a href="#poll-options">Poll options</a>.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="options-pdf">PDF options</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pdf.workerSrc</code></td><td>string</td><td><code>null</code></td><td>URL to the PDF.js worker script. Required for PDF.js rendering; if not set and PDF.js is not loaded, the plugin falls back to an iframe.</td></tr>
+            <tr><td><code>pdf.cMapUrl</code></td><td>string</td><td><code>null</code></td><td>Optional URL for CMap files (e.g. for embedded fonts).</td></tr>
+            <tr><td><code>pdf.cMapPacked</code></td><td>boolean</td><td><code>true</code></td><td>Use packed CMap format.</td></tr>
+            <tr><td><code>pdf.annotations</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, PDF annotations (links, highlights, etc.) are rendered.</td></tr>
+            <tr><td><code>pdf.autoFit</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the page is scaled to fit the stage (width and height). If <code>false</code>, fit to width only.</td></tr>
+            <tr><td><code>pdf.autoFitMaxScale</code></td><td>number</td><td><code>2.5</code></td><td>Maximum scale when <code>autoFit</code> is <code>true</code>.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>PDF.js version compatibility.</strong> The plugin uses the core PDF.js API (<code>getDocument</code>, <code>getPage</code>, <code>getViewport</code>, <code>render</code>, <code>getAnnotations</code>) and renders annotations (links, highlights) via a custom overlay. It is compatible with <strong>PDF.js 2.2.x</strong> (e.g. 2.2.228) as well as 3.x. When <code>pdf.annotations</code> is <code>true</code>, the plugin uses <code>pdfjsLib.Util.normalizeRect</code> when available (e.g. in 3.x); for 2.2.x legacy builds where <code>Util</code> may not be exposed, an internal fallback is used so annotation rendering works without throwing. Render tasks and document loading use <code>.promise</code> when present, with a thenable fallback for older 2.x builds. Set <code>pdf.workerSrc</code> to the worker script that matches your PDF.js build (e.g. <code>pdf.worker.min.js</code> for 2.2.228). To verify behaviour with PDF.js 2.2.228, open <a href="example-pdf-2.2.html">example-pdf-2.2.html</a> (loads 2.2.228 from CDN and initializes the viewer with the matching worker).</p>
+
+        <h3 id="options-media">Media (jPlayer)</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>supportedVideoFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated list of jPlayer format names for video (e.g. <code>'m4v, webmv'</code>). If <code>null</code>, derived from file extension.</td></tr>
+            <tr><td><code>supportedAudioFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated list of jPlayer format names for audio (e.g. <code>'mp3, oga'</code>). If <code>null</code>, derived from file extension.</td></tr>
+          </tbody>
+        </table>
+        <p>Per-item override: set <code>item.supplied</code> (e.g. via <code>itemData</code> or <code>data-supplied</code>) to override the format for a single item.</p>
+
+        <h3 id="options-callbacks">Data and callbacks</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>itemData</code></td><td>function</td><td><code>null</code></td><td><code>function($el, defaultItem)</code> — returns the item object for the given element. Second argument is the item the plugin would build from <code>data-*</code> and DOM; you can add properties to <code>defaultItem</code> and return it, or return a new object. If <code>null</code>, the item is built from <code>data-*</code> and DOM (see Item data).</td></tr>
+            <tr><td><code>onDownload</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called when the user clicks the Download button. If not provided, the plugin uses a default link download.</td></tr>
+            <tr><td><code>onRender</code></td><td>function</td><td><code>null</code></td><td><code>function(item, $stage, viewer)</code> — if this function appends content to <code>$stage</code>, the built-in renderer for the item type is skipped. May return <code>{ toolbar: [...], destroy: function() }</code>.</td></tr>
+            <tr><td><code>onToolbar</code></td><td>function</td><td><code>null</code></td><td><code>function(item, defaultToolbar, viewer)</code> — receives the resolved toolbar array; can modify or replace it. Not used when <code>onRender</code> returns a toolbar.</td></tr>
+            <tr><td><code>onLoading</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called just before an item is loaded.</td></tr>
+            <tr><td><code>onOpen</code></td><td>function</td><td><code>null</code></td><td><code>function(item, $stage, viewer)</code> — called after the item is shown and the toolbar is built.</td></tr>
+            <tr><td><code>onClose</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called when the overlay closes; <code>item</code> is the one that was visible.</td></tr>
+            <tr><td><code>onThemeChange</code></td><td>function</td><td><code>null</code></td><td><code>function(theme, viewer)</code> — called when the user changes the theme via the header toggle (<code>theme</code> is <code>'dark'</code> or <code>'light'</code>).</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="options-wcag">Accessibility (WCAG)</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>wcag</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, enables focus trap (Tab cycles only inside the overlay), focus save/restore on open/close, initial focus on the close button, and ARIA attributes: dialog role, aria-modal, aria-labelledby/describedby, aria-live on title and counter for dynamic announcements, and aria-label on overlay buttons (close, nav, zoom, theme, fullscreen, carousel toggle and carousel nav). Video and audio control buttons (play, pause, mute, fullscreen, playback speed), carousel item buttons (e.g. “Item 2 of 5”), and PDF toolbar buttons also get aria-label. Set to <code>true</code> for accessibility-conscious deployments.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="options-carousel">Carousel</h3>
+        <p>When the <code>carousel</code> option is set to an object with <code>enabled: true</code>, a thumbnails button appears in the overlay header. Clicking it toggles a strip of thumbnails below the stage so users can jump to any item by clicking its thumbnail. This is useful when there are many attachments and you want a quick overview and navigation.</p>
+        <p>The strip shows several thumbnails at a time (e.g. 4 or 5 visible). When the number of items exceeds <code>carousel.navThreshold</code>, prev/next arrows appear on the strip to scroll. Video and audio items can show a custom thumbnail via <code>thumbnailUrl</code> (or <code>data-thumbnail</code>) with a play icon overlay; otherwise the filename or type label is shown.</p>
+        <h4>Configuration</h4>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>carousel</code></td><td>object</td><td><code>{ enabled: false, navThreshold: 4 }</code></td><td>Set to an object to configure the carousel. When <code>carousel.enabled</code> is <code>false</code>, the carousel is disabled (no header button, no strip).</td></tr>
+            <tr><td><code>carousel.enabled</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, a button appears in the header; clicking it shows a strip of thumbnails below the stage. Click a thumbnail to go to that item. Video/audio items show <code>thumbnailUrl</code> with a play icon overlay when set; otherwise the filename or type label is shown.</td></tr>
+            <tr><td><code>carousel.navThreshold</code></td><td>number</td><td><code>4</code></td><td>When the number of items exceeds this value, prev/next buttons appear on the carousel strip to scroll. The strip shows multiple thumbnails at a time; the arrows scroll by a step. Set higher to show arrows only when there are more items (e.g. <code>6</code> so arrows appear only when there are more than 6 items).</td></tr>
+          </tbody>
+        </table>
+        <h4>Behavior</h4>
+        <ul>
+          <li>The carousel strip is hidden by default when the overlay opens; the user toggles it with the header thumbnails button.</li>
+          <li>When the item count is less than or equal to <code>carousel.navThreshold</code>, the strip prev/next arrows are hidden because all thumbnails fit in view.</li>
+          <li>Clicking a thumbnail scrolls the strip to keep the active item in view and updates the stage to that item.</li>
+        </ul>
+        <p>Example:</p>
+        <pre><code class="language-javascript">$('#post').componentViewer({
+  carousel: { enabled: true, navThreshold: 4 },
+  toolbar: { download: true, zoom: true }
+});</code></pre>
+
+        <h3 id="options-stage-only">Stage only</h3>
+        <p>When <code>stageOnly.enabled</code> is <code>true</code>, the overlay shows only the center stage (and optionally prev/next navigation). The header (title, counter, close, theme, fullscreen, carousel) and footer (toolbar, zoom) are hidden. The user can close with <strong>Escape</strong> or by clicking the backdrop (if <code>overlayClose</code> is true). This is useful for kiosk-style or distraction-free viewing.</p>
+        <p>When <code>stageOnly.hideNavigation</code> is <code>true</code>, the prev/next arrow buttons are also hidden. The user can still move between items using <strong>keyboard navigation</strong> (Left/Right arrow keys when <code>keyboardNav</code> is true).</p>
+        <h4>Configuration</h4>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>stageOnly</code></td><td>object \| boolean</td><td><code>{ enabled: false, hideNavigation: false }</code></td><td>Set to an object to configure. Passing <code>true</code> is treated as <code>{ enabled: true }</code>; passing <code>false</code> as <code>{ enabled: false }</code>.</td></tr>
+            <tr><td><code>stageOnly.enabled</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, only the center stage (and optionally prev/next) is shown; header and footer are hidden.</td></tr>
+            <tr><td><code>stageOnly.hideNavigation</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, the prev/next navigation buttons are hidden. Navigation is still possible via keyboard (Left/Right arrows). Only has effect when <code>stageOnly.enabled</code> is <code>true</code>.</td></tr>
+          </tbody>
+        </table>
+        <h4>Behavior</h4>
+        <ul>
+          <li>When <code>stageOnly</code> is enabled, the overlay shell gets the class <code>cv-stage-only</code> so that header and footer are hidden via CSS.</li>
+          <li>If slideshow is also enabled and there is more than one item, the footer can still show the Play/Pause slideshow button (see Slideshow).</li>
+          <li>With <code>hideNavigation: true</code>, keyboard prev/next (arrow keys) continue to work when <code>keyboardNav</code> is true.</li>
+        </ul>
+        <p>Example:</p>
+        <pre><code class="language-javascript">$('#post').componentViewer({
+  stageOnly: { enabled: true, hideNavigation: false },
+  overlayClose: true,
+  keyboardNav: true
+});</code></pre>
+        <p>Example with keyboard-only navigation (no prev/next buttons):</p>
+        <pre><code class="language-javascript">$('#post').componentViewer({
+  stageOnly: { enabled: true, hideNavigation: true },
+  overlayClose: true,
+  keyboardNav: true
+});</code></pre>
+
+        <h3 id="options-slideshow">Slideshow</h3>
+        <p>When the <code>slideshow</code> option is set to an object with <code>enabled: true</code>, the viewer can auto-advance to the next item after a fixed interval (or when video/audio playback ends). This is useful for hands-free browsing of multiple attachments. The slideshow only runs when there are at least two items.</p>
+        <p>A <strong>Play slideshow</strong> / <strong>Pause slideshow</strong> button is added to the toolbar when slideshow is enabled, unless <code>hideSlideshowButton: true</code> and <code>autoStart: true</code> (in that case the button is hidden and the slideshow runs automatically with no way to pause from the UI). When <code>autoStart: true</code> and the button is shown, it shows <strong>Pause slideshow</strong> initially. If <code>autoStart: false</code>, the button shows <strong>Play slideshow</strong> until the user starts it. Optionally set <code>showProgress: true</code> to display a progress bar in the footer that fills until the next slide (default is <code>false</code>).</p>
+        <h4>Configuration</h4>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>slideshow</code></td><td>object | <code>null</code></td><td><code>null</code></td><td>Set to an object to enable slideshow. When <code>null</code> or omitted, no auto-advance and no Play/Pause button.</td></tr>
+            <tr><td><code>slideshow.enabled</code></td><td>boolean</td><td>—</td><td>Must be <code>true</code> to enable slideshow (auto-advance and toolbar button).</td></tr>
+            <tr><td><code>slideshow.interval</code></td><td>number</td><td><code>4</code></td><td>Seconds to show each item before advancing to the next. Used for all types when <code>advanceMedia</code> is <code>'interval'</code>; for video/audio with <code>'onEnd'</code>, this is used as a fallback if the media never fires <code>ended</code>.</td></tr>
+            <tr><td><code>slideshow.autoStart</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the slideshow starts automatically when the overlay opens. If <code>false</code>, the user must click <strong>Play slideshow</strong> to start.</td></tr>
+            <tr><td><code>slideshow.hideSlideshowButton</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code> and <code>autoStart</code> is <code>true</code>, the Play/Pause slideshow button is hidden. The slideshow runs automatically with no toolbar control. This option is only considered when <code>autoStart</code> is <code>true</code>.</td></tr>
+            <tr><td><code>slideshow.advanceMedia</code></td><td>string</td><td><code>'interval'</code></td><td><code>'interval'</code> — advance after <code>interval</code> seconds for every item (image, PDF, video, etc.). <code>'onEnd'</code> — for video and audio, advance when playback ends ( <code>ended</code> event); for other types, still use <code>interval</code>. A fallback timer is still used for media in case it never ends (e.g. live stream).</td></tr>
+            <tr><td><code>slideshow.showProgress</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, a thin progress bar is shown in the footer that fills over the slide interval to indicate time until the next slide. When <code>false</code> (default), no progress bar is shown.</td></tr>
+          </tbody>
+        </table>
+        <h4>Behavior</h4>
+        <ul>
+          <li>The slideshow timer is cleared when the user closes the overlay, or when they use prev/next/goTo (so manual navigation does not double-advance).</li>
+          <li>When the user clicks <strong>Pause slideshow</strong>, the timer is cleared and the slideshow does not restart on subsequent item loads until they click <strong>Play slideshow</strong>.</li>
+          <li>The Play/Pause button appears at the start of the toolbar (before type-specific items such as PDF page controls) and is styled compactly so it does not dominate the footer.</li>
+        </ul>
+        <p>Example:</p>
+        <pre><code class="language-javascript">$('#post').componentViewer({
+  slideshow: {
+    enabled: true,
+    interval: 5,
+    autoStart: true,
+    advanceMedia: 'interval',
+    showProgress: false   // set true to show progress bar until next slide
+  },
+  toolbar: { download: true, zoom: true }
+});</code></pre>
+
+        <h3 id="poll-options">Poll options</h3>
+        <p>When <code>pollOption.enabled</code> is <code>true</code> and an item has <code>pollOptionLabel</code>, a row appears above the toolbar with the label and a radio or checkbox (depending on <code>pollOption.mode</code>). Use this for polls where each option is an image or attachment. <code>onSelect(item, selected, viewer)</code> is called when the user toggles; <code>selected</code> is the new checked state. The poll row is hidden for HTML type and for image error (footer is hidden).</p>
+        <h4>Configuration</h4>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pollOption</code></td><td>object</td><td><code>null</code></td><td>When set, items with <code>pollOptionLabel</code> show a row above the toolbar with the label and a radio or checkbox.</td></tr>
+            <tr><td><code>pollOption.enabled</code></td><td>boolean</td><td>—</td><td>Must be <code>true</code> to enable the poll UI.</td></tr>
+            <tr><td><code>pollOption.mode</code></td><td>string</td><td><code>'radio'</code></td><td><code>'radio'</code> for single choice or <code>'checkbox'</code> for multiple.</td></tr>
+            <tr><td><code>pollOption.onSelect</code></td><td>function</td><td>—</td><td><code>function(item, selected, viewer)</code> — <code>selected</code> is the new checked state (boolean).</td></tr>
+          </tbody>
+        </table>
+        <h4>Item fields</h4>
+        <table>
+          <thead><tr><th>Field</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td><code>pollOptionLabel</code></td><td><code>data-poll-option-label</code></td></tr>
+            <tr><td><code>pollOptionId</code></td><td><code>data-poll-option-id</code></td></tr>
+          </tbody>
+        </table>
+
+        <hr class="section-end" />
+      </section>
+
+      <section id="item-data" class="section">
+        <h2>Item data</h2>
+        <p>Each item is a plain object describing one attachment. When <code>itemData</code> is not provided, the plugin builds it from the matched element as follows:</p>
+        <table>
+          <thead><tr><th>Field</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td><code>type</code></td><td><code>data-type</code> or <code>'image'</code></td></tr>
+            <tr><td><code>src</code></td><td><code>data-src</code> or <code>href</code> or first <code>img[src]</code></td></tr>
+            <tr><td><code>title</code></td><td><code>data-title</code> or <code>title</code> or <code>''</code></td></tr>
+            <tr><td><code>downloadUrl</code></td><td><code>data-download</code></td></tr>
+            <tr><td><code>fileExt</code></td><td><code>data-ext</code></td></tr>
+            <tr><td><code>fileSize</code></td><td><code>data-size</code></td></tr>
+            <tr><td><code>thumbnailUrl</code></td><td><code>data-thumbnail</code> or <code>data-poster</code></td></tr>
+            <tr><td><code>message</code></td><td><code>data-message</code></td></tr>
+            <tr><td><code>html</code></td><td><code>data-html</code> (for type <code>html</code>)</td></tr>
+            <tr><td><code>pollOptionLabel</code></td><td><code>data-poll-option-label</code></td></tr>
+            <tr><td><code>pollOptionId</code></td><td><code>data-poll-option-id</code></td></tr>
+            <tr><td><code>supplied</code></td><td><code>data-supplied</code> (jPlayer format override)</td></tr>
+          </tbody>
+        </table>
+        <p>The plugin also sets <code>item.$el</code> to the jQuery-wrapped element. Use <code>itemData</code> to return a custom object: the callback receives <code>($el, defaultItem)</code>; you can add or override properties on <code>defaultItem</code> and return it, or return a new object (e.g. from your API).</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="content-types" class="section">
+        <h2>Content types</h2>
+        <p>The plugin chooses a renderer in this order:</p>
+        <ol>
+          <li><strong>onRender(item, $stage, viewer)</strong> — If it appends to <code>$stage</code>, the built-in renderer is skipped. It may return <code>{ toolbar: [...], destroy: function() }</code>.</li>
+          <li><strong>Built-in by type</strong> — Based on <code>item.type</code> (default <code>'image'</code>).</li>
+          <li><strong>Unsupported</strong> — If the stage is still empty, a "no preview" card is shown.</li>
+        </ol>
+        <h3>Built-in types</h3>
+        <table>
+          <thead><tr><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>image</code></td><td>Image with zoom slider, mouse wheel zoom, pinch zoom, and drag pan. GIF is supported the same way (use <code>data-type="image"</code> or omit type); the browser displays and animates GIFs in the viewer. If the URL is invalid or the image fails to load, an error card is shown without a download button and the entire toolbar/footer (including poll row) is hidden.</td></tr>
+            <tr><td><code>video</code></td><td>jPlayer with full controls (or native <code>&lt;video&gt;</code> if jPlayer is not loaded).</td></tr>
+            <tr><td><code>audio</code></td><td>jPlayer (or native <code>&lt;audio&gt;</code>).</td></tr>
+            <tr><td><code>pdf</code></td><td>PDF.js with page navigation, thumbnails, zoom, rotate, print (or iframe fallback).</td></tr>
+            <tr><td><code>inline</code></td><td>Source/code view with line numbers. Content from <code>item.content</code> or fetched from <code>item.src</code>.</td></tr>
+            <tr><td><code>error</code></td><td>"Cannot preview" card with optional custom message and Download button when <code>src</code> or <code>downloadUrl</code> is set.</td></tr>
+            <tr><td><code>html</code></td><td>User-provided HTML in the stage. No toolbar, no download; header title/counter can be hidden if <code>title</code> is empty.</td></tr>
+            <tr><td>Other</td><td>Unsupported card with file icon, name, optional extension/size, and Download when a URL is available.</td></tr>
+          </tbody>
+        </table>
+        <hr class="section-end" />
+      </section>
+
+      <section id="toolbar" class="section">
+        <h2>Toolbar</h2>
+        <p>Toolbar and zoom options:</p>
+        <table>
+          <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>toolbar.download</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the built-in Download button is added to the toolbar when applicable (not for HTML type or image error).</td></tr>
+            <tr><td><code>toolbar.zoom</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the zoom widget (slider and in/out buttons) is shown for image items.</td></tr>
+            <tr><td><code>toolbarItems</code></td><td>array</td><td><code>[]</code></td><td>Array of custom toolbar items (objects, <code>'separator'</code>, or DOM nodes). Merged with the renderer toolbar and the Download button.</td></tr>
+            <tr><td><code>zoom.min</code></td><td>number</td><td><code>1</code></td><td>Minimum image zoom level.</td></tr>
+            <tr><td><code>zoom.max</code></td><td>number</td><td><code>5</code></td><td>Maximum image zoom level.</td></tr>
+            <tr><td><code>zoom.step</code></td><td>number</td><td><code>0.01</code></td><td>Step value for the zoom slider.</td></tr>
+            <tr><td><code>zoom.wheelStep</code></td><td>number</td><td><code>0.15</code></td><td>Zoom increment per mouse wheel step.</td></tr>
+            <tr><td><code>zoom.showPercentage</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, the zoom widget displays the current zoom as a percentage (e.g. "150%").</td></tr>
+            <tr><td><code>zoom.onZoom</code></td><td>function</td><td><code>null</code></td><td><code>function(zoomLevel, item, viewer)</code> — called when the zoom level changes.</td></tr>
+          </tbody>
+        </table>
+        <h3>How the toolbar is resolved</h3>
+        <p>The toolbar is resolved as follows:</p>
+        <ul>
+          <li>For <code>html</code> type or image error: no toolbar, footer hidden.</li>
+          <li>When <code>onRender</code> returns a <code>toolbar</code> array: that array is used as-is (no auto download/zoom).</li>
+          <li>Otherwise: renderer toolbar (if any) + <code>toolbarItems</code> (with optional separator) are merged, then <code>onToolbar</code> can modify the array, then the Download button is appended if <code>toolbar.download</code> is not <code>false</code>. The zoom widget is shown for image items when <code>toolbar.zoom</code> is not <code>false</code>.</li>
+        </ul>
+        <h3>Ways to build the toolbar</h3>
+        <p>The toolbar array can be built from multiple sources:</p>
+        <table>
+          <thead><tr><th>Source</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Renderer</strong></td><td>Built-in renderers (e.g. PDF) can return a <code>toolbar</code> array (buttons, separators, or DOM nodes).</td></tr>
+            <tr><td><strong>toolbarItems</strong></td><td>Option array merged after the renderer toolbar (with an optional separator before it).</td></tr>
+            <tr><td><strong>onToolbar</strong></td><td>Callback receives the merged array and can modify or replace it before rendering.</td></tr>
+            <tr><td><strong>onRender</strong></td><td>If you return <code>{ toolbar: [...] }</code>, that array is used as the full toolbar (no auto download/zoom).</td></tr>
+            <tr><td><strong>Download</strong></td><td>When <code>toolbar.download</code> is true, a Download button is appended after all items.</td></tr>
+            <tr><td><strong>Zoom widget</strong></td><td>Shown for image items when <code>toolbar.zoom</code> is true (separate from the toolbar array).</td></tr>
+          </tbody>
+        </table>
+        <h3>Toolbar entry types</h3>
+        <p>Each element in a toolbar array can be one of:</p>
+        <table>
+          <thead><tr><th>Type</th><th>Syntax</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Object</strong></td><td><code>{ id, icon, label, ... }</code></td><td>Rendered as a button. See object properties below.</td></tr>
+            <tr><td><strong>Separator</strong></td><td><code>'separator'</code> or <code>'-'</code></td><td>Rendered as a visual separator between buttons.</td></tr>
+            <tr><td><strong>DOM</strong></td><td><code>HTMLElement</code> or jQuery object</td><td>Appended as-is (e.g. a span for "Page 1 / 10").</td></tr>
+          </tbody>
+        </table>
+        <h3>Toolbar item object properties</h3>
+        <p>When an entry is an object, the following properties are supported:</p>
+        <table>
+          <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>string</td><td>—</td><td>Optional. Adds CSS class <code>cv-tb-<em>id</em></code> to the button.</td></tr>
+            <tr><td><code>icon</code></td><td>string</td><td>—</td><td>Icon: HTML string (e.g. <code>&lt;svg&gt;...&lt;/svg&gt;</code>) or CSS class (e.g. <code>fa fa-share</code>). HTML is sanitized.</td></tr>
+            <tr><td><code>label</code></td><td>string</td><td>—</td><td>Text label; used as tooltip if <code>tooltip</code> is not set.</td></tr>
+            <tr><td><code>tooltip</code></td><td>string</td><td>—</td><td>Button <code>title</code> and, when <code>wcag</code> is true, <code>aria-label</code>. Falls back to <code>label</code> or <code>id</code>.</td></tr>
+            <tr><td><code>showLabel</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, the label is shown as text beside the icon.</td></tr>
+            <tr><td><code>className</code></td><td>string</td><td>—</td><td>Extra CSS class(es) on the button.</td></tr>
+            <tr><td><code>visible</code></td><td>boolean or function</td><td><code>true</code></td><td>If <code>false</code> or a function that returns <code>false</code>, the button is not rendered. Function: <code>visible(item, viewer)</code>.</td></tr>
+            <tr><td><code>onClick</code></td><td>function</td><td>—</td><td><code>function(item, viewer)</code> — called when the button is clicked.</td></tr>
+          </tbody>
+        </table>
+        <p>Example:</p>
+        <pre><code class="language-javascript">toolbarItems: [
+  { id: 'share', icon: 'fa fa-share', label: 'Share', onClick: function(item) { /* ... */ } },
+  'separator',
+  { id: 'delete', label: 'Delete', visible: function(item) { return item.canDelete; }, onClick: fn }
+]</code></pre>
+        <hr class="section-end" />
+      </section>
+
+      <section id="i18n" class="section">
+        <h2>I18N (Internationalization)</h2>
+        <p>All user-facing text in the overlay (button labels, tooltips, error messages, and type labels) comes from a single <strong>default string registry</strong> defined inside the plugin. The plugin never uses hardcoded strings; it looks up every label by key from this registry. This lets you localize the UI by replacing the registry with your own translations.</p>
+
+        <h3>Default strings</h3>
+        <p>The plugin exposes this registry as <code>$.fn.componentViewer.defaultStrings</code>. By default it is the built-in English object used internally. You can:</p>
+        <ul>
+          <li><strong>Replace the whole object</strong> with your locale (e.g. French, Spanish) so every key uses your text.</li>
+          <li><strong>Override specific keys</strong> by assigning a new object that includes all keys you need, or by copying the default and then changing only the keys you care about.</li>
+        </ul>
+        <p>You do not pass strings via component options; there is no <code>strings</code> option. The only way to customize text is to set <code>$.fn.componentViewer.defaultStrings</code> before initializing the plugin (or before opening the overlay).</p>
+
+        <h3>How to use it for your locale</h3>
+        <p>Use only the keys listed in the <strong>Available keys</strong> table below. The registry has no duplicate keys: the same key is reused wherever that text appears (e.g. <code>fullscreen</code> for both overlay and video fullscreen button, <code>pdf</code> for PDF label and iframe title, <code>audio</code> for the audio type label). Do not use <code>videoFullscreen</code>, <code>exitVideoFullscreen</code>, <code>typePdf</code>, or <code>typeAudio</code>—those keys were removed; use <code>fullscreen</code>, <code>exitFullscreen</code>, <code>pdf</code>, and <code>audio</code> instead.</p>
+        <ol>
+          <li>After loading the plugin script, set <code>$.fn.componentViewer.defaultStrings</code> to your translation object. Use the same keys as the built-in registry (see Available keys); any missing key falls back to the built-in English value.</li>
+          <li>Initialize the viewer as usual. All instances will use the strings from <code>defaultStrings</code>.</li>
+        </ol>
+        <p>Example — French (keys from the current registry, no duplicates):</p>
+        <pre><code class="language-javascript">// Replace the entire registry with French
+$.fn.componentViewer.defaultStrings = {
+  close: 'Fermer',
+  fullscreen: 'Plein écran',
+  exitFullscreen: 'Quitter le plein écran',
+  attachments: 'Pièces jointes',
+  showAttachments: 'Afficher les pièces jointes',
+  scrollCarouselLeft: 'Défiler le carrousel à gauche',
+  scrollCarouselRight: 'Défiler le carrousel à droite',
+  previousItem: 'Élément précédent',
+  nextItem: 'Élément suivant',
+  zoomOut: 'Zoom arrière',
+  zoomLevel: 'Niveau de zoom',
+  zoomIn: 'Zoom avant',
+  switchToLightMode: 'Passer en mode clair',
+  switchToDarkMode: 'Passer en mode sombre',
+  playSlideshow: 'Lancer le diaporama',
+  pauseSlideshow: 'Mettre en pause le diaporama',
+  download: 'Télécharger',
+  downloadSource: 'Télécharger la source',
+  invalidImageUrl: 'URL d\'image invalide ou non sécurisée',
+  imageLoadFailed: 'Impossible de charger l\'image',
+  play: 'Lecture',
+  pause: 'Pause',
+  playbackSpeed: 'Vitesse de lecture',
+  mute: 'Muet',
+  unmute: 'Activer le son',
+  thumbnails: 'Miniatures',
+  previousPage: 'Page précédente',
+  nextPage: 'Page suivante',
+  rotate: 'Pivoter',
+  print: 'Imprimer',
+  pdf: 'PDF',
+  previewNotAvailable: 'Aperçu non disponible pour ce fichier',
+  file: 'Fichier',
+  audio: 'Audio',
+  couldNotLoadFileInline: 'Impossible de charger le fichier en ligne',
+  noContentInline: 'Pas de contenu ou URL invalide pour la vue en ligne',
+  noHtmlProvided: 'Aucun HTML fourni pour la vue HTML',
+  typeVideo: 'Vidéo',
+  typeCode: 'Code',
+  typeHtml: 'HTML',
+  typeError: '—'
+};
+
+$('#post').componentViewer({ /* options */ });</code></pre>
+        <p>Example — override only a few keys (merge with default):</p>
+        <pre><code class="language-javascript">// Keep defaults and override only what you need
+var defaults = $.fn.componentViewer.defaultStrings;
+$.fn.componentViewer.defaultStrings = $.extend({}, defaults, {
+  close: 'Cerrar',
+  download: 'Descargar',
+  fullscreen: 'Pantalla completa'
+});
+$('#post').componentViewer({});</code></pre>
+
+        <h3>Available keys</h3>
+        <p>The registry uses the following keys. Your translation object should use these same keys; any key you omit falls back to the built-in English value. The registry has no duplicate keys—the same key is reused wherever that text appears (e.g. <code>fullscreen</code> for both overlay and video fullscreen button).</p>
+        <table>
+          <thead><tr><th>Key</th><th>Default (English)</th><th>Used for</th></tr></thead>
+          <tbody>
+            <tr><td><code>close</code></td><td>Close</td><td>Close button</td></tr>
+            <tr><td><code>fullscreen</code></td><td>Fullscreen</td><td>Overlay and video fullscreen button</td></tr>
+            <tr><td><code>exitFullscreen</code></td><td>Exit fullscreen</td><td>Overlay and video exit-fullscreen button</td></tr>
+            <tr><td><code>attachments</code></td><td>Attachments</td><td>Carousel toggle</td></tr>
+            <tr><td><code>showAttachments</code></td><td>Show attachments</td><td>—</td></tr>
+            <tr><td><code>scrollCarouselLeft</code>, <code>scrollCarouselRight</code></td><td>Scroll carousel left/right</td><td>Carousel nav</td></tr>
+            <tr><td><code>carouselItemLabel</code></td><td>Item %1 of %2 (<code>%1</code> and <code>%2</code> replaced with index and total)</td><td>Carousel item button aria-label when <code>wcag</code> is true</td></tr>
+            <tr><td><code>previousItem</code>, <code>nextItem</code></td><td>Previous/Next item</td><td>Stage nav</td></tr>
+            <tr><td><code>zoomOut</code>, <code>zoomLevel</code>, <code>zoomIn</code></td><td>Zoom out / Zoom level / Zoom in</td><td>Zoom widget</td></tr>
+            <tr><td><code>switchToLightMode</code>, <code>switchToDarkMode</code></td><td>Switch to light/dark mode</td><td>Theme toggle</td></tr>
+            <tr><td><code>playSlideshow</code>, <code>pauseSlideshow</code></td><td>Play/Pause slideshow</td><td>Slideshow button</td></tr>
+            <tr><td><code>download</code>, <code>downloadSource</code></td><td>Download / Download source</td><td>Download button, error card</td></tr>
+            <tr><td><code>invalidImageUrl</code>, <code>imageLoadFailed</code></td><td>Image error messages</td><td>Image error card</td></tr>
+            <tr><td><code>play</code>, <code>pause</code>, <code>playbackSpeed</code>, <code>mute</code>, <code>unmute</code></td><td>Video/audio controls</td><td>Media toolbar</td></tr>
+            <tr><td><code>thumbnails</code>, <code>previousPage</code>, <code>nextPage</code>, <code>rotate</code>, <code>print</code></td><td>PDF toolbar labels</td><td>PDF toolbar</td></tr>
+            <tr><td><code>pdf</code></td><td>PDF</td><td>PDF iframe title and carousel type label</td></tr>
+            <tr><td><code>previewNotAvailable</code>, <code>file</code>, <code>audio</code></td><td>Unsupported/error card; <code>audio</code> also for audio fallback title</td></tr>
+            <tr><td><code>couldNotLoadFileInline</code>, <code>noContentInline</code>, <code>noHtmlProvided</code></td><td>Inline/HTML error messages</td><td>—</td></tr>
+            <tr><td><code>typeVideo</code>, <code>typeCode</code>, <code>typeHtml</code>, <code>typeError</code></td><td>Video / Code / HTML / —</td><td>Carousel type labels (PDF and Audio use <code>pdf</code>, <code>audio</code>)</td></tr>
+          </tbody>
+        </table>
+
+        <h3>When to set defaultStrings</h3>
+        <p>Set <code>defaultStrings</code> <strong>before</strong> you call <code>.componentViewer(...)</code> on any element. The plugin reads from it when building the overlay and when rendering labels (e.g. on open, theme toggle, fullscreen toggle). If you change <code>defaultStrings</code> after some viewers are already created, new opens and updated UI will use the new values; already-rendered text in the overlay may not update until the overlay is closed and reopened.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="callbacks" class="section">
+        <h2>Callbacks (lifecycle)</h2>
+        <table>
+          <thead><tr><th>Callback</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td><code>onLoading(item, viewer)</code></td><td>Just before the item is loaded.</td></tr>
+            <tr><td><code>onOpen(item, $stage, viewer)</code></td><td>After the item is shown and the toolbar is built.</td></tr>
+            <tr><td><code>onClose(item, viewer)</code></td><td>When the overlay closes; <code>item</code> was the visible one.</td></tr>
+            <tr><td><code>onThemeChange(theme, viewer)</code></td><td>When the user toggles theme.</td></tr>
+            <tr><td><code>onDownload(item, viewer)</code></td><td>When the user clicks the Download button (if provided).</td></tr>
+            <tr><td><code>onRender(item, $stage, viewer)</code></td><td>First chance to render; appending to <code>$stage</code> skips the built-in renderer.</td></tr>
+            <tr><td><code>onToolbar(item, defaultToolbar, viewer)</code></td><td>To modify the toolbar before it is rendered.</td></tr>
+          </tbody>
+        </table>
+        <hr class="section-end" />
+      </section>
+
+      <section id="public-api" class="section">
+        <h2>Public API</h2>
+        <p>After initializing with <code>$(container).componentViewer(options)</code>, call methods by name:</p>
+        <table>
+          <thead><tr><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>$(container).componentViewer('open', index)</code></td><td>Opens the overlay at the given index (default <code>0</code>).</td></tr>
+            <tr><td><code>$(container).componentViewer('close')</code></td><td>Closes the overlay.</td></tr>
+            <tr><td><code>$(container).componentViewer('next')</code></td><td>Moves to the next item (respects <code>loop</code>).</td></tr>
+            <tr><td><code>$(container).componentViewer('prev')</code></td><td>Moves to the previous item (respects <code>loop</code>).</td></tr>
+            <tr><td><code>$(container).componentViewer('goTo', index)</code></td><td>Moves to the item at <code>index</code> and reloads.</td></tr>
+            <tr><td><code>$(container).componentViewer('currentItem')</code></td><td>Returns the current item object.</td></tr>
+            <tr><td><code>$(container).componentViewer('setTheme', theme)</code></td><td>Sets theme to <code>'dark'</code> or <code>'light'</code> and updates the UI.</td></tr>
+            <tr><td><code>$(container).componentViewer('refresh')</code></td><td>Re-collects items and re-binds clicks; if the overlay is open, reloads the current item or closes if there are no items.</td></tr>
+            <tr><td><code>$(container).componentViewer('destroy')</code></td><td>Removes event handlers and clears data; closes the overlay if this instance is active.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Globals:</strong> <code>$.fn.componentViewer.defaults</code> (default options), <code>$.fn.componentViewer.Icons</code> (SVG strings for close, prev, next, zoom, download, etc.).</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="accessibility" class="section">
+        <h2>Accessibility</h2>
+        <p>Set <code>wcag: true</code> to enable:</p>
+        <ul>
+          <li><strong>Focus trap</strong> — Tab and Shift+Tab cycle only inside the overlay.</li>
+          <li><strong>Focus save/restore</strong> — Focus is saved when the overlay opens and restored when it closes.</li>
+          <li><strong>Initial focus</strong> — Focus moves to the close button when the overlay opens.</li>
+          <li><strong>ARIA</strong> — Overlay and shell get appropriate roles and attributes; buttons get <code>aria-label</code> where needed.</li>
+        </ul>
+        <p>When <code>wcag</code> is <code>false</code>, these behaviors are disabled and no dialog ARIA is applied.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="responsiveness-gestures" class="section">
+        <h2>Responsiveness &amp; gestures</h2>
+        <p>The overlay is designed to work on desktop and on mobile devices (including in-app web views). The layout is responsive and touch-friendly; gestures are supported on touch devices without affecting desktop behavior.</p>
+
+        <h3>Responsive UI</h3>
+        <ul>
+          <li><strong>Full-screen overlay</strong> — The overlay fills the viewport so it works on any screen size. Ensure your page uses a viewport meta tag (e.g. <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code>) for correct scaling on mobile.</li>
+          <li><strong>Flexible layout</strong> — Header, stage, carousel, and footer adapt to available width and height. Buttons and controls are sized for touch when used on small screens.</li>
+          <li><strong>Body scroll lock</strong> — When the overlay is open, background page scroll is disabled so the overlay is the only scroll context and gestures are not lost to the page.</li>
+        </ul>
+
+        <h3>Desktop (mouse &amp; keyboard)</h3>
+        <ul>
+          <li><strong>Navigation</strong> — Click prev/next arrows or use <strong>Left</strong> / <strong>Right</strong> arrow keys (when <code>keyboardNav</code> is true). No transition animation on click or keyboard.</li>
+          <li><strong>Images</strong> — Mouse wheel zooms in/out; drag to pan when zoomed. Zoom slider in the footer adjusts level.</li>
+          <li><strong>Close</strong> — Close button, backdrop click (if <code>overlayClose</code>), or <strong>Escape</strong>.</li>
+        </ul>
+
+        <h3>Mobile / touch / web view (gestures)</h3>
+        <p>On touch devices, the following gestures are supported. They apply only to touch; desktop mouse behavior is unchanged.</p>
+        <table>
+          <thead><tr><th>Gesture</th><th>Action</th><th>Option</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Swipe left / right</strong></td><td>Go to next / previous item. Uses the same transition as the slideshow when navigating.</td><td><code>swipeNav: true</code> (default)</td></tr>
+            <tr><td><strong>Swipe down</strong></td><td>Close the overlay (when more than one item or when swipe-to-close is allowed).</td><td><code>swipeToClose: true</code> (default), <code>overlayClose: true</code></td></tr>
+            <tr><td><strong>Pinch (two fingers)</strong></td><td>Zoom in/out on the current image. Only when viewing an image.</td><td>Always on for image type</td></tr>
+            <tr><td><strong>Pan (one finger when zoomed, or two-finger drag)</strong></td><td>Move the zoomed image within the stage.</td><td>Always on for image type when zoom &gt; 1</td></tr>
+          </tbody>
+        </table>
+        <p>Horizontal swipe is treated as navigation only when the gesture is clearly horizontal (threshold and direction); vertical swipe down is used for close. This avoids conflicts with pinch/pan on images. Single-finger horizontal swipe does not trigger image pan—only prev/next.</p>
+        <p>To disable touch navigation or swipe-to-close, set <code>swipeNav: false</code> or <code>swipeToClose: false</code> in the options.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="security" class="section">
+        <h2>Security</h2>
+        <p>The plugin applies several measures to reduce XSS and related risks when rendering user or item data.</p>
+        <table>
+          <thead><tr><th>Measure</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><strong>HTML escaping</strong></td><td>Strings from item data (e.g. <code>title</code>, <code>fileSize</code>, file name) are escaped when inserted into the DOM so they are never interpreted as HTML. This prevents script injection via malicious titles or metadata.</td></tr>
+            <tr><td><strong>Safe download filename</strong></td><td>The value used for <code>a.download</code> (suggested file name) is sanitized: control characters and path-unsafe characters (<code>&lt;&gt;:"/\|?*</code> and NUL) are stripped to avoid XSS or path injection if the value is reflected elsewhere.</td></tr>
+            <tr><td><strong>Resource URL validation</strong></td><td>URLs used for images, video, audio, and PDF (<code>src</code> / <code>href</code>) are validated before use. <code>javascript:</code>, <code>vbscript:</code>, and script-capable <code>data:</code> URLs are rejected. Allowed: <code>http://</code>, <code>https://</code>, <code>blob:</code>, and <code>data:</code> only for <code>image/*</code>, <code>video/*</code>, <code>audio/*</code>, and <code>application/pdf</code>.</td></tr>
+            <tr><td><strong>Download link URL validation</strong></td><td>URLs used for the Download button (<code>a.href</code>) are restricted to <code>http://</code>, <code>https://</code>, and <code>blob:</code>. <code>javascript:</code>, <code>vbscript:</code>, and <code>data:</code> are not allowed so the link cannot execute script.</td></tr>
+            <tr><td><strong>Toolbar icon sanitization</strong></td><td>Custom toolbar icon HTML (<code>toolbarItems[].icon</code>) is sanitized before use: <code>&lt;script&gt;</code> elements are removed, event-handler attributes (e.g. <code>onclick</code>, <code>onload</code>) are removed, and any <code>href</code> / <code>xlink:href</code> that use <code>javascript:</code> or <code>vbscript:</code> are replaced with <code>#</code> to prevent XSS via custom icons.</td></tr>
+          </tbody>
+        </table>
+        <p>When you supply HTML via <code>onRender</code> or <code>item.html</code> (HTML type), you are responsible for ensuring that content is safe; the plugin does not sanitize arbitrary HTML content you inject.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="browser-support" class="section">
+        <h2>Browser support</h2>
+        <table>
+          <thead><tr><th>Browser</th><th>Minimum version</th></tr></thead>
+          <tbody>
+            <tr><td>Chrome (desktop)</td><td>87</td></tr>
+            <tr><td>Firefox (desktop)</td><td>85</td></tr>
+            <tr><td>Safari (desktop)</td><td>14.1</td></tr>
+            <tr><td>Edge (Chromium)</td><td>87</td></tr>
+            <tr><td>Safari (iOS)</td><td>14.5</td></tr>
+            <tr><td>Chrome (Android)</td><td>87</td></tr>
+            <tr><td>Internet Explorer</td><td>11 (partial; not recommended)</td></tr>
+          </tbody>
+        </table>
+        <p>jQuery 1.7+ is required. jPlayer and PDF.js have their own browser requirements.</p>
+        <hr class="section-end" />
+      </section>
+
+      <section id="examples" class="section">
+        <h2>Examples</h2>
+
+        <h3>Basic gallery</h3>
+        <pre><code class="language-javascript">$('#gallery').componentViewer({
+  toolbar: { download: true, zoom: true },
+  pdf: { workerSrc: 'pdf.worker.min.js' }
+});</code></pre>
+
+        <h3>Loop disabled, counter hidden</h3>
+        <pre><code class="language-javascript">$('#gallery').componentViewer({
+  loop: false,
+  showCounter: false,
+  toolbar: { download: true, zoom: true }
+});</code></pre>
+
+        <h3>Custom item data</h3>
+        <pre><code class="language-javascript">$('#gallery').componentViewer({
+  itemData: function($el, defaultItem) {
+    defaultItem.canDelete = $el.data('can-delete');
+    defaultItem.attachmentId = $el.data('id');
+    return defaultItem;
+  },
+  toolbar: { download: true }
+});</code></pre>
+
+        <h3>WCAG and custom download</h3>
+        <pre><code class="language-javascript">$('#gallery').componentViewer({
+  wcag: true,
+  onDownload: function(item, viewer) {
+    window.location = item.downloadUrl || item.src;
+  }
+});</code></pre>
+
+        <h3>Programmatic open</h3>
+        <pre><code class="language-javascript">$('#gallery').componentViewer({ toolbar: { download: true } });
+$('#gallery').componentViewer('open', 2);  // Open third item</code></pre>
+        <hr class="section-end" />
+      </section>
+
+      <p style="margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); color: #57606a; font-size: 13px;">
+        ComponentViewer — MIT License. For live demos, open <code>example.html</code> in the plugin folder.
+      </p>
+    </main>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+  <script>
+    Prism.highlightAll();
+    (function() {
+      var pres = document.querySelectorAll('main pre');
+      var list = [];
+      pres.forEach(function(pre) {
+        if (pre.querySelector('code[class*="language-"]')) list.push(pre);
+      });
+      list.forEach(function(pre) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+        var code = pre.querySelector('code');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-code-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy code');
+        wrapper.appendChild(btn);
+        btn.addEventListener('click', function() {
+          var text = code.textContent;
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+          });
+        });
+      });
+    })();
+  </script>
+  <script>
+    (function() {
+      var searchInput = document.getElementById('doc-search');
+      var noResults = document.getElementById('doc-no-results');
+      var main = document.querySelector('main');
+      var nav = document.querySelector('nav');
+      if (!searchInput || !main || !nav) return;
+
+      var sections = main.querySelectorAll('section.section');
+      var navLinks = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+      var navH2s = [].slice.call(nav.children).filter(function(c) { return c.tagName === 'H2'; });
+      var navIds = navLinks.map(function(a) {
+        var h = a.getAttribute('href');
+        return h && h.length > 1 ? h.slice(1) : null;
+      }).filter(Boolean);
+
+      function getSectionForId(id) {
+        var el = document.getElementById(id);
+        if (!el) return null;
+        return el.closest ? el.closest('section.section') : null;
+      }
+
+      /** Text content for a nav link: full section if link targets the section, else subsection (from target element to next nav anchor). */
+      function getContentForLink(id) {
+        var el = document.getElementById(id);
+        if (!el) return '';
+        var section = el.closest ? el.closest('section.section') : null;
+        if (section && section.id === id) return (section.textContent || '').trim();
+        var text = '';
+        var current = el;
+        while (current) {
+          text += (current.textContent || '').trim();
+          if (current !== el && current.id && navIds.indexOf(current.id) !== -1) break;
+          current = current.nextElementSibling;
+        }
+        return text.trim();
+      }
+
+      function textMatchesQuery(text, words) {
+        var t = (text || '').toLowerCase();
+        for (var i = 0; i < words.length; i++) {
+          if (t.indexOf(words[i]) === -1) return false;
+        }
+        return true;
+      }
+
+      function sectionMatchesQuery(section, words) {
+        return textMatchesQuery(section.textContent || '', words);
+      }
+
+      function runSearch() {
+        var raw = (searchInput.value || '').trim();
+        var q = raw.toLowerCase();
+        var words = q ? q.split(/\s+/).filter(Boolean) : [];
+
+        var visibleSections = new Set();
+
+        if (words.length === 0) {
+          sections.forEach(function(section) {
+            section.classList.remove('doc-search-hidden');
+            visibleSections.add(section);
+          });
+        } else {
+          sections.forEach(function(section) {
+            var show = sectionMatchesQuery(section, words);
+            if (show) {
+              section.classList.remove('doc-search-hidden');
+              visibleSections.add(section);
+            } else {
+              section.classList.add('doc-search-hidden');
+            }
+          });
+        }
+
+        var visibleCount = visibleSections.size;
+
+        // Left menu: show only nav links whose target section/subsection content matches the query
+        navLinks.forEach(function(a) {
+          var href = a.getAttribute('href');
+          if (!href || href === '#') return;
+          var id = href.slice(1);
+          var show = words.length === 0 || textMatchesQuery(getContentForLink(id), words);
+          if (show) a.removeAttribute('style');
+          else a.style.display = 'none';
+        });
+
+        // Show section group (h2) only if it has at least one visible link
+        navH2s.forEach(function(h2) {
+          var hasVisible = false;
+          var sibling = h2.nextElementSibling;
+          while (sibling && sibling.tagName !== 'H2') {
+            if (sibling.tagName === 'A' && sibling.style.display !== 'none') hasVisible = true;
+            sibling = sibling.nextElementSibling;
+          }
+          if (words.length === 0 || hasVisible) h2.removeAttribute('style');
+          else h2.style.display = 'none';
+        });
+
+        noResults.classList.toggle('visible', words.length > 0 && visibleCount === 0);
+
+        if (words.length > 0 && visibleCount > 0) {
+          var firstVisible = null;
+          for (var i = 0; i < sections.length; i++) {
+            if (visibleSections.has(sections[i])) { firstVisible = sections[i]; break; }
+          }
+          if (firstVisible && typeof firstVisible.scrollIntoView === 'function') {
+            firstVisible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      }
+
+      var debounceTimer;
+      searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSearch, 120);
+      });
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          searchInput.value = '';
+          runSearch();
+          searchInput.blur();
+        }
+      });
+      runSearch();
+    })();
+  </script>
+</body>
+</html>

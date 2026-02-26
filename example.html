@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComponentViewer – Example</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="component-viewer.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #333; line-height: 1.6; padding: 24px; }
+    .page-title { text-align: center; margin-bottom: 32px; }
+    .page-title h1 { font-size: 24px; } .page-title p { color: #888; font-size: 14px; }
+    .post { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.1); max-width: 680px; margin: 0 auto 24px; overflow: hidden; }
+    .post-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #999; }
+    .post-author { font-weight: 600; font-size: 14px; } .post-time { font-size: 12px; color: #999; }
+    .post-body { padding: 16px 20px; font-size: 14px; }
+    .post-attachments { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding: 0 20px 16px; }
+    .att { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; height: 100px; border-radius: 8px; background: #f5f5f5; cursor: pointer; overflow: hidden; transition: transform .15s, box-shadow .15s; font-size: 12px; font-weight: 600; color: #666; text-decoration: none; }
+    .att:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .att img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .att i { font-size: 22px; opacity: .5; } .att .att-label { font-size: 11px; color: #888; }
+    .cv-single-item { display: flex; }
+    .cv-single-item > .att { flex: 1; min-width: 0; }
+    .section-title { max-width: 680px; margin: 40px auto 10px; font-size: 16px; font-weight: 700; padding-bottom: 6px; border-bottom: 2px solid #ddd; }
+    .section-desc { max-width: 680px; margin: 0 auto 16px; font-size: 14px; color: #666; }
+    .api-buttons { max-width: 680px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .api-btn { padding: 8px 16px; border-radius: 6px; border: none; background: #333; color: #fff; cursor: pointer; font-size: 13px; }
+    .api-btn:hover { background: #555; }
+    #log { max-width: 680px; margin: 0 auto 20px; background: #1e1e1e; color: #8f8; border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 12px; max-height: 160px; overflow-y: auto; line-height: 1.8; }
+    #log:empty::after { content: 'Events appear here...'; color: #666; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 10px auto 20px; max-width: 680px; }
+    .cm { color: #6a9955; } .kw { color: #c586c0; } .str { color: #ce9178; } .fn { color: #dcdcaa; }
+  </style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>ComponentViewer</h1>
+  <p>Built-in image (zoom/pan), video (jPlayer), audio (jPlayer), PDF (pdf.js). Customer can override any via onRender or modify toolbar via onToolbar.</p>
+  <p style="font-size: 13px; margin-top: 8px;"><a href="example-jquery1.7.html">example-jquery1.7.html</a> — Same plugin with <strong>jQuery 1.7.1</strong>, jPlayer, and PDF.js. <a href="example-pdf-2.2.html">example-pdf-2.2.html</a> — PDF viewer with <strong>PDF.js 2.2.228</strong>. <a href="example-jplayer-2.5.html">example-jplayer-2.5.html</a> — Video/audio with <strong>jPlayer 2.5.0</strong>.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 1: All built-in renderers
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 1 — Built-in Renderers (image, video, audio, pdf)</div>
+<p class="section-desc">
+  All types rendered by the plugin. Image gets zoom slider + pan. Video/audio use jPlayer.
+  PDF uses pdf.js with page nav, zoom, rotate, thumbnails. XLSX gets "no preview" card.
+  Custom toolbarItems (Extract, Delete) appear alongside built-in toolbar items.
+</p>
+
+<pre>
+$(<span class="str">'#post-builtin'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+
+  <span class="cm">// Custom buttons shown alongside built-in toolbar items</span>
+  <span class="kw">toolbarItems</span>: [
+    { <span class="kw">id</span>: <span class="str">'extract'</span>, <span class="kw">icon</span>: <span class="str">'&lt;svg&gt;...&lt;/svg&gt;'</span>, <span class="kw">label</span>: <span class="str">'Extract Text'</span>,
+      <span class="fn">onClick</span>: <span class="kw">function</span>(item) { alert(<span class="str">'Extract: '</span> + item.title); } },
+    <span class="str">'separator'</span>,
+    { <span class="kw">id</span>: <span class="str">'delete'</span>, <span class="kw">icon</span>: <span class="str">'&lt;svg&gt;...&lt;/svg&gt;'</span>, <span class="kw">label</span>: <span class="str">'Delete'</span>,
+      <span class="fn">onClick</span>: <span class="kw">function</span>(item) { confirm(<span class="str">'Delete '</span> + item.title + <span class="str">'?'</span>); } }
+  ],
+
+  <span class="fn">onDownload</span>: <span class="kw">function</span>(item) { <span class="cm">/* custom download logic */</span> },
+  <span class="fn">onLoading</span>: <span class="kw">function</span>(item) { console.log(<span class="str">'loading'</span>, item.type); },
+  <span class="fn">onOpen</span>:    <span class="kw">function</span>(item) { console.log(<span class="str">'opened'</span>, item.title); },
+  <span class="fn">onClose</span>:   <span class="kw">function</span>(item) { console.log(<span class="str">'closed'</span>, item.title); }
+
+  <span class="cm">// No onRender → all types use built-in renderers</span>
+  <span class="cm">// No onToolbar → built-in toolbar used as-is</span>
+});
+</pre>
+
+<div class="post" id="post-builtin">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Alice — Built-in Renderers</div><div class="post-time">Now</div></div>
+  </div>
+  <div class="post-body">Click any attachment to preview.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Mountain.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Demo.mp4</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Horse.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3" data-size="45 KB"><i class="fa-solid fa-headphones"></i><span class="att-label">Horse.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Spec.pdf</span></div>
+    <div class="att cv-item" data-type="xlsx" data-title="Data.xlsx" data-ext="XLSX" data-size="2.4 MB" data-download="#"><i class="fa-solid fa-file-excel"></i><span class="att-label">Data.xlsx</span></div>
+  </div>
+</div>
+
+<div id="log"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 2: onToolbar callback — modify built-in toolbar
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 2 — onToolbar Callback (modify built-in toolbar)</div>
+<p class="section-desc">
+  Same built-in renderers, but <code>onToolbar</code> modifies the toolbar per type.
+  Adds a "Share" button to PDF toolbar. Adds "Clip" button to video toolbar.
+  Removes items from image toolbar. All without touching the renderer.
+</p>
+
+<pre>
+$(<span class="str">'#post-ontoolbar'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+  <span class="kw">toolbarItems</span>: [ TB_EXTRACT, <span class="str">'separator'</span>, TB_DELETE ],
+
+  <span class="cm">// Modify built-in toolbar per type — without replacing the renderer</span>
+  <span class="fn">onToolbar</span>: <span class="kw">function</span>(item, defaultToolbar, viewer) {
+
+    <span class="kw">if</span> (item.type === <span class="str">'pdf'</span>) {
+      <span class="cm">// Add Share button to PDF's built-in toolbar</span>
+      defaultToolbar.push(<span class="str">'separator'</span>);
+      defaultToolbar.push({ <span class="kw">id</span>: <span class="str">'share'</span>, <span class="kw">label</span>: <span class="str">'Share'</span>, <span class="fn">onClick</span>: fn });
+      <span class="kw">return</span> defaultToolbar;
+    }
+
+    <span class="kw">if</span> (item.type === <span class="str">'video'</span>) {
+      <span class="cm">// Add Clip button to video toolbar</span>
+      defaultToolbar.push(<span class="str">'separator'</span>);
+      defaultToolbar.push({ <span class="kw">id</span>: <span class="str">'clip'</span>, <span class="kw">label</span>: <span class="str">'Clip'</span>, <span class="fn">onClick</span>: fn });
+      <span class="kw">return</span> defaultToolbar;
+    }
+
+    <span class="kw">if</span> (item.type === <span class="str">'image'</span>) {
+      <span class="cm">// Remove delete button from image toolbar</span>
+      <span class="kw">return</span> defaultToolbar.filter(<span class="kw">function</span>(tb) {
+        <span class="kw">return</span> !tb.id || tb.id !== <span class="str">'delete'</span>;
+      });
+    }
+
+    <span class="cm">// return nothing → use default toolbar unchanged</span>
+  }
+});
+</pre>
+
+<div class="post" id="post-ontoolbar">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Bob — onToolbar Override</div><div class="post-time">1h ago</div></div>
+  </div>
+  <div class="post-body">Same files, but toolbar is customized per type via onToolbar.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Coast.jpg" href="https://picsum.photos/id/100/1600/1000"><img src="https://picsum.photos/id/100/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Clip.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Clip.mp4</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Report.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Report.pdf</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 3: onRender callback — full customer override
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 3 — onRender Callback (full customer override)</div>
+<p class="section-desc">
+  Customer handles video rendering themselves (native &lt;video&gt; instead of jPlayer).
+  PDF is rendered as a simple iframe. Audio falls through to built-in jPlayer.
+  Image falls through to built-in. onRender gets first shot — if it renders, built-in is skipped.
+</p>
+
+<pre>
+$(<span class="str">'#post-onrender'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+  <span class="kw">toolbarItems</span>: [ TB_DELETE ],
+
+  <span class="cm">// Full override — gets first shot before built-in renderers</span>
+  <span class="fn">onRender</span>: <span class="kw">function</span>(item, $stage, viewer) {
+
+    <span class="kw">if</span> (item.type === <span class="str">'video'</span>) {
+      <span class="cm">// Custom native HTML5 video (instead of jPlayer)</span>
+      <span class="kw">var</span> $v = $(<span class="str">'&lt;video controls autoplay&gt;...&lt;/video&gt;'</span>);
+      $stage.append($v);
+      <span class="kw">return</span> {
+        <span class="kw">toolbar</span>: [                <span class="cm">// ← full replacement, no auto download/zoom</span>
+          { <span class="kw">id</span>: <span class="str">'fullscreen'</span>, <span class="fn">onClick</span>: fn },
+          <span class="str">'separator'</span>,
+          { <span class="kw">id</span>: <span class="str">'download'</span>, <span class="fn">onClick</span>: fn }
+        ],
+        <span class="fn">destroy</span>: <span class="kw">function</span>() { $v[0].pause(); }
+      };
+    }
+
+    <span class="kw">if</span> (item.type === <span class="str">'pdf'</span>) {
+      <span class="cm">// Custom iframe PDF (instead of pdf.js)</span>
+      $stage.append(<span class="str">'&lt;iframe src="' + item.src + '"&gt;&lt;/iframe&gt;'</span>);
+      <span class="kw">return</span> {
+        <span class="kw">toolbar</span>: [{ <span class="kw">id</span>: <span class="str">'open-tab'</span>, <span class="fn">onClick</span>: fn }]
+      };
+    }
+
+    <span class="cm">// Don't handle audio/image → falls through to built-in</span>
+  }
+});
+</pre>
+
+<div class="post" id="post-onrender">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Carol — onRender Override</div><div class="post-time">3h ago</div></div>
+  </div>
+  <div class="post-body">Video and PDF use custom rendering. Audio and image use built-in.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Valley.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Custom.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Custom Video</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Sound.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3"><i class="fa-solid fa-headphones"></i><span class="att-label">Sound.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Doc.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Custom PDF</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 4: Light theme
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 4 — Light Theme</div>
+<p class="section-desc">
+  Same built-in renderers with <code>theme: 'light'</code>. All components — shell, toolbar, zoom slider,
+  video controls, audio player, PDF viewer, unsupported card — adapt to the light theme.
+</p>
+
+<pre>
+$(<span class="str">'#post-light'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">theme</span>: <span class="str">'light'</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+  <span class="kw">toolbarItems</span>: [ TB_EXTRACT ]
+});
+</pre>
+
+<div class="post" id="post-light">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Dave — Light Theme</div><div class="post-time">Just now</div></div>
+  </div>
+  <div class="post-body">Same attachment types, light theme viewer.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Sunset.jpg" href="https://picsum.photos/id/122/1600/1000"><img src="https://picsum.photos/id/122/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Light.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Light.mp4</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Track.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3" data-size="45 KB"><i class="fa-solid fa-headphones"></i><span class="att-label">Track.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Memo.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Memo.pdf</span></div>
+    <div class="att cv-item" data-type="docx" data-title="Notes.docx" data-ext="DOCX" data-size="120 KB"><i class="fa-solid fa-file-word"></i><span class="att-label">Notes.docx</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 5: Custom jPlayer supplied format
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 5 — Custom Supported Formats</div>
+<p class="section-desc">
+  Override jPlayer's <code>supplied</code> via <code>supportedVideoFormats</code> and
+  <code>supportedAudioFormats</code>, or per-item via <code>data-supplied</code>.
+  If not provided, auto-detected from file extension.
+</p>
+
+<pre>
+$(<span class="str">'#post-supplied'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">supportedVideoFormats</span>: <span class="str">'m4v, webmv'</span>,   <span class="cm">// jPlayer supplied for video</span>
+  <span class="kw">supportedAudioFormats</span>: <span class="str">'mp3, oga'</span>,    <span class="cm">// jPlayer supplied for audio</span>
+});
+
+<span class="cm">// Per-item override via data attribute (highest priority)</span>
+<span class="cm">// &lt;div class="cv-item" data-type="video" data-supplied="webmv" ...&gt;</span>
+
+<span class="cm">// Priority: data-supplied → supportedVideoFormats/supportedAudioFormats → auto-detect</span>
+</pre>
+
+<div class="post" id="post-supplied">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Eve — Custom Supplied</div><div class="post-time">Just now</div></div>
+  </div>
+  <div class="post-body">Video with global supplied override, and one with per-item override.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="video" data-title="GlobalSupplied.mp4"
+         data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4">
+      <i class="fa-solid fa-film"></i><span class="att-label">Global m4v</span>
+    </div>
+    <div class="att cv-item" data-type="video" data-title="PerItem.webm"
+         data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-supplied="m4v" data-ext="WEBM">
+      <i class="fa-solid fa-film"></i><span class="att-label">Per-item m4v</span>
+    </div>
+    <div class="att cv-item" data-type="audio" data-title="Song.mp3"
+         data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3">
+      <i class="fa-solid fa-headphones"></i><span class="att-label">Auto-detect mp3</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 6: Single-item viewer (one image / one PDF only)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 6 — Single-Item Viewer (one post, each attachment opens separately)</div>
+<p class="section-desc">
+  One post with multiple attachments. Each attachment is wrapped in its own container that has
+  <strong>only one</strong> <code>.cv-item</code>. The viewer is initialized on each wrapper, so clicking
+  an attachment opens a single-item viewer (no prev/next) for that item only.
+</p>
+
+<pre>
+<span class="cm">// One post; each attachment in a wrapper with exactly one .cv-item</span>
+<span class="cm">// Init viewer on each wrapper → each opens separately as single-item</span>
+$(<span class="str">'#post-single .cv-single-item'</span>).<span class="fn">each</span>(<span class="kw">function</span>() {
+  $(<span class="kw">this</span>).<span class="fn">componentViewer</span>({
+    <span class="kw">selector</span>: <span class="str">'.cv-item'</span>,
+    <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+    <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+  });
+});
+</pre>
+
+<div class="post" id="post-single">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Single-item examples</div><div class="post-time">One post, each opens separately</div></div>
+  </div>
+  <div class="post-body">Click any attachment — it opens in its own viewer with only that item (no prev/next).</div>
+  <div class="post-attachments">
+    <div class="cv-single-item">
+      <a class="att cv-item" data-type="image" data-title="Only photo" href="https://picsum.photos/id/42/1600/1000"><img src="https://picsum.photos/id/42/300/200" alt="" /></a>
+    </div>
+    <div class="cv-single-item">
+      <a class="att cv-item" data-type="image" data-title="Beach.jpg" href="https://picsum.photos/id/41/1600/1000"><img src="https://picsum.photos/id/41/300/200" alt="" /></a>
+    </div>
+    <div class="cv-single-item">
+      <div class="att cv-item" data-type="pdf" data-title="Single.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Single.pdf</span></div>
+    </div>
+    <div class="cv-single-item">
+      <div class="att cv-item" data-type="pdf" data-title="Report.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Report.pdf</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 7: PDF with autoFit option
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 7 — PDF with autoFit</div>
+<p class="section-desc">
+  <code>pdf.autoFit: true</code> (default) scales the page to fit the stage (width and height). Resize the window to see it re-fit.
+  Use <code>pdf.autoFitMaxScale</code> to cap the zoom (default 2.5). Set <code>autoFit: false</code> for fit-to-width only.
+</p>
+
+<pre>
+$(<span class="str">'#post-pdf-autofit'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: {
+    <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span>,
+    <span class="kw">autoFit</span>: <span class="kw">true</span>,           <span class="cm">// scale to fit stage (width + height); default true</span>
+    <span class="kw">autoFitMaxScale</span>: <span class="num">2.5</span>   <span class="cm">// max zoom when autoFit (default 2.5)</span>
+  }
+});
+</pre>
+
+<div class="post" id="post-pdf-autofit">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">PDF with autoFit</div><div class="post-time">Now</div></div>
+  </div>
+  <div class="post-body">Click to open — PDF scales to fit the viewer; resize the window to see auto-fit update.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Spec.pdf (autoFit)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 8: Video with custom thumbnail (poster) URL
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 8 — Video with custom thumbnail (poster)</div>
+<p class="section-desc">
+  Use <code>data-thumbnail</code> or <code>data-poster</code> to pass a thumbnail image URL for video items.
+  The overlay shows this image as the poster until play. If omitted, the default (no poster) is used.
+</p>
+
+<pre>
+<span class="cm">// In HTML: data-thumbnail or data-poster on the video item</span>
+&lt;div class="cv-item" <span class="kw">data-type</span>=<span class="str">"video"</span> <span class="kw">data-src</span>=<span class="str">"video.mp4"</span>
+     <span class="kw">data-thumbnail</span>=<span class="str">"https://example.com/thumb.jpg"</span> <span class="kw">data-title</span>=<span class="str">"Demo"</span>&gt;
+  &lt;img src="https://example.com/thumb.jpg" alt="" /&gt;
+&lt;/div&gt;
+
+<span class="cm">// No plugin option needed — thumbnailUrl is read from the element</span>
+$(<span class="str">'#post-video-thumb'</span>).<span class="fn">componentViewer</span>({ <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span> } });
+</pre>
+
+<div class="post" id="post-video-thumb">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Video with custom thumbnail</div><div class="post-time">Now</div></div>
+  </div>
+  <div class="post-body">First: video with <code>data-thumbnail</code> (poster in overlay). Second: same video without thumbnail (default).</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="video" data-title="With poster.mp4"
+       data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"
+       data-thumbnail="https://picsum.photos/id/10/640/360">
+      <img src="https://picsum.photos/id/10/300/200" alt="" />
+    </a>
+    <div class="att cv-item" data-type="video" data-title="No poster.mp4"
+         data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4">
+      <i class="fa-solid fa-film"></i><span class="att-label">No thumbnail</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 9: Native / iframe fallbacks (no jPlayer, no pdf.js)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 9 — Native HTML5 &amp; iframe fallbacks (no jPlayer, no pdf.js)</div>
+<p class="section-desc">
+  When jPlayer and pdf.js are <strong>not</strong> loaded, the plugin still previews video, audio, and PDF:
+  video and audio use native HTML5 <code>&lt;video&gt;</code> and <code>&lt;audio&gt;</code> with controls;
+  PDF is shown in an <code>&lt;iframe&gt;</code> (browser’s built-in viewer). No error container.
+  Open <a href="example-no-libs.html" target="_blank" rel="noopener">example-no-libs.html</a> to see it (same viewer, no jPlayer/pdf.js scripts).
+</p>
+
+<pre>
+<span class="cm">// In your page: load only jQuery + component-viewer.js (no jPlayer, no pdf.js)</span>
+<span class="cm">// &lt;script src="jquery.min.js"&gt;&lt;/script&gt;</span>
+<span class="cm">// &lt;script src="component-viewer.js"&gt;&lt;/script&gt;</span>
+<span class="cm">// Video → native &lt;video controls&gt;, Audio → native &lt;audio controls&gt;, PDF → &lt;iframe src="..."&gt;</span>
+
+$(<span class="str">'#post-no-libs'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-no-libs">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Case 9 — Try without libraries</div><div class="post-time">Fallback demo</div></div>
+  </div>
+  <div class="post-body">
+    In this page, jPlayer and pdf.js are loaded, so video/audio/PDF use them. To see <strong>native HTML5 video/audio</strong> and <strong>iframe PDF</strong>, open
+    <a href="example-no-libs.html" target="_blank" rel="noopener">example-no-libs.html</a> (no jPlayer, no pdf.js).
+  </div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Video</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Horse.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3"><i class="fa-solid fa-headphones"></i><span class="att-label">Audio</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">PDF</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 10: Inline (source code — js, jsp, java)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 10 — Inline (source code: js, jsp, java)</div>
+<p class="section-desc">
+  Type <code>inline</code> shows file content in the center stage with <strong>white background</strong> and <strong>line numbers</strong>.
+  Use <code>item.content</code> (string) or <code>item.src</code> (URL to fetch as text). For custom HTML, use <code>onRender</code>:
+  if you append an element to <code>$stage</code> and return, that is shown instead of the built-in viewer.
+</p>
+
+<pre>
+<span class="cm">// item.content = string (pre-loaded) or item.src = URL to fetch</span>
+<span class="cm">// onRender(item, $stage, viewer): if type === 'inline' and you append HTML to $stage, it replaces built-in</span>
+$(<span class="str">'#post-inline'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el) {
+    <span class="kw">var</span> type = $el.data(<span class="str">'type'</span>);
+    <span class="kw">if</span> (type === <span class="str">'inline'</span>)
+      <span class="kw">return</span> { <span class="kw">type</span>: <span class="str">'inline'</span>, <span class="kw">title</span>: $el.data(<span class="str">'title'</span>), <span class="kw">content</span>: INLINE_SNIPPETS[$el.data(<span class="str">'key'</span>)] };
+    <span class="cm">// ... default item from $el</span>
+  },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span> },
+  <span class="fn">onRender</span>: <span class="kw">function</span>(item, $stage, viewer) {
+    <span class="kw">if</span> (item.type === <span class="str">'inline'</span> && item.customHtml) {
+      $stage.append(item.customHtml); <span class="kw">return</span> { <span class="kw">toolbar</span>: [] };
+    }
+  }
+});
+</pre>
+
+<div class="post" id="post-inline">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Case 10 — Inline source viewer</div><div class="post-time">js, jsp, java</div></div>
+  </div>
+  <div class="post-body">Click to open: <code>item.content</code> (snippets), <code>item.src</code> (fetch from URL), or custom HTML via onRender.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="inline" data-title="demo.js" data-ext="JS" data-key="demo-js"><i class="fa-solid fa-file-code"></i><span class="att-label">demo.js</span></div>
+    <div class="att cv-item" data-type="inline" data-title="Sample.java" data-ext="JAVA" data-key="sample-java"><i class="fa-solid fa-file-code"></i><span class="att-label">Sample.java</span></div>
+    <div class="att cv-item" data-type="inline" data-title="remote (item.src)" data-ext="JSON" data-src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/package.json"><i class="fa-solid fa-cloud-arrow-down"></i><span class="att-label">From URL</span></div>
+    <div class="att cv-item" data-type="inline" data-title="Custom (onRender)" data-key="custom"><i class="fa-solid fa-code"></i><span class="att-label">Custom HTML</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 11: Error (type "error" — show error container; onRender can override)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 11 — Error / cannot preview (type "error")</div>
+<p class="section-desc">
+  Type <code>error</code> shows the same “cannot preview” container as Data.xlsx in Case 1: file icon, name, optional extension/size, message (default “Preview is not available for this file”), and <strong>Download</strong> button when <code>item.src</code> or <code>item.downloadUrl</code> is set. Use <code>item.message</code> or <code>data-message</code> to override the text. If <code>onRender</code> appends HTML to <code>$stage</code> for this item, that is shown instead of the default container.
+</p>
+
+<pre>
+<span class="cm">// item: { type: 'error', title?, message?, fileExt?, fileSize?, src?, downloadUrl? } — all from data-* or itemData</span>
+$(<span class="str">'#post-error'</span>).<span class="fn">componentViewer</span>({ <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span> } });
+</pre>
+
+<div class="post" id="post-error">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Case 11 — Cannot preview (same as Data.xlsx)</div><div class="post-time">type "error"</div></div>
+  </div>
+  <div class="post-body">Same template as Data.xlsx: icon, name, “Preview is not available”, Download. No special attributes needed.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="error" data-title="Data.xlsx" data-ext="XLSX" data-size="2.4 MB" data-download="#"><i class="fa-solid fa-file-excel"></i><span class="att-label">Data.xlsx</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 12: HTML (user-provided HTML; no toolbar, no download)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 12 — HTML (type "html")</div>
+<p class="section-desc">
+  Type <code>html</code> shows user-provided HTML in the stage. No toolbar, no download. If <code>item.title</code> is not given, the title and counter are hidden. Provide <code>item.html</code> (string, jQuery object, or DOM node); if missing, an error message is shown.
+</p>
+
+<pre>
+<span class="cm">// item: { type: 'html', html: '&lt;div&gt;...&lt;/div&gt;' or jQuery/DOM, title?: '' }</span>
+$(<span class="str">'#post-html'</span>).<span class="fn">componentViewer</span>({ <span class="kw">itemData</span>: <span class="kw">function</span>($el) { ... } });
+</pre>
+
+<div class="post" id="post-html">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Case 12 — User HTML</div><div class="post-time">type "html"</div></div>
+  </div>
+  <div class="post-body">Toolbar and download are hidden. With title, no title, or iframe example.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="html" data-title="Custom card" data-key="with-title"><i class="fa-solid fa-code"></i><span class="att-label">With title</span></div>
+    <div class="att cv-item" data-type="html" data-key="no-title"><i class="fa-solid fa-code"></i><span class="att-label">No title</span></div>
+    <div class="att cv-item" data-type="html" data-title="Embedded page" data-key="iframe"><i class="fa-solid fa-window-maximize"></i><span class="att-label">iframe</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 13: Poll options (images with option label + radio/checkbox above toolbar)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 13 — Poll options (option label + radio/checkbox above toolbar)</div>
+<p class="section-desc">
+  For polls where each option has an image: set <code>pollOption: { enabled: true, mode: 'radio'|'checkbox', onSelect }</code>.
+  <code>item.title</code> stays the image name (header); <code>item.pollOptionLabel</code> and optional <code>item.pollOptionId</code>
+  are shown in a row <strong>above the toolbar</strong> with a radio or checkbox. <code>onSelect(item, selected, viewer)</code> is called when the user toggles the option.
+</p>
+
+<pre>
+$(<span class="str">'#post-poll'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pollOption</span>: {
+    <span class="kw">enabled</span>: <span class="kw">true</span>,
+    <span class="kw">mode</span>: <span class="str">'radio'</span>,   <span class="cm">// or 'checkbox'</span>
+    <span class="fn">onSelect</span>: <span class="kw">function</span>(item, selected, viewer) { <span class="cm">/* record vote, etc. */</span> }
+  },
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el) {
+    <span class="cm">// title = image name; pollOptionLabel / pollOptionId from data-*</span>
+    <span class="kw">return</span> { <span class="kw">type</span>: <span class="str">'image'</span>, <span class="kw">title</span>: $el.data(<span class="str">'title'</span>), <span class="kw">src</span>: ..., <span class="kw">pollOptionLabel</span>: $el.data(<span class="str">'poll-option-label'</span>), <span class="kw">pollOptionId</span>: $el.data(<span class="str">'poll-option-id'</span>) };
+  }
+});
+</pre>
+
+<div class="post" id="post-poll">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Poll — Pick your favorite (radio, single choice)</div><div class="post-time">Case 13</div></div>
+  </div>
+  <div class="post-body">Click an option image to preview. The option label and a <strong>radio</strong> appear above the toolbar; use <code>onSelect</code> to perform the action.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="option-a.jpg" data-poll-option-id="opt-a" data-poll-option-label="Option A — Mountains" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="option-b.jpg" data-poll-option-id="opt-b" data-poll-option-label="Option B — Coast" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="option-c.jpg" data-poll-option-id="opt-c" data-poll-option-label="Option C — Valley" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<div class="post" id="post-poll-checkbox">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Poll — Pick all that apply (checkbox, multi-choice)</div><div class="post-time">Case 13</div></div>
+  </div>
+  <div class="post-body">Same as above but <code>mode: 'checkbox'</code>. You can select multiple options; <code>onSelect(item, selected, viewer)</code> is called for each toggle.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="choice-1.jpg" data-poll-option-id="ch1" data-poll-option-label="Choice 1 — Sunset" href="https://picsum.photos/id/122/1600/1000"><img src="https://picsum.photos/id/122/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="choice-2.jpg" data-poll-option-id="ch2" data-poll-option-label="Choice 2 — Forest" href="https://picsum.photos/id/101/1600/1000"><img src="https://picsum.photos/id/101/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="choice-3.jpg" data-poll-option-id="ch3" data-poll-option-label="Choice 3 — Lake" href="https://picsum.photos/id/42/1600/1000"><img src="https://picsum.photos/id/42/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 14: Image failure (non-previewable — error card without download)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 14 — Image failure (non-previewable)</div>
+<p class="section-desc">
+  When an image has an <strong>invalid/unsafe URL</strong> or <strong>fails to load</strong>, the viewer shows an error card
+  <strong>without</strong> a download button, and the toolbar has <strong>no download</strong> option. First item: invalid URL (not http/https).
+  Second item: valid URL that returns 404 so the image fails to load.
+</p>
+
+<pre>
+<span class="cm">// No special options — built-in image renderer shows error card (no download) when URL is unsafe or load fails</span>
+$(<span class="str">'#post-image-failure'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-image-failure">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Image failure examples</div><div class="post-time">Case 14</div></div>
+  </div>
+  <div class="post-body">Click to see: invalid URL (error card, no download) and broken image URL (load fails → error card, no download).</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="image" data-title="Invalid URL.jpg" data-src="invalid-url"><i class="fa-solid fa-image"></i><span class="att-label">Invalid URL</span></div>
+    <div class="att cv-item" data-type="image" data-title="Missing.jpg" data-src="https://example.com/nonexistent-image-404.jpg"><i class="fa-solid fa-image"></i><span class="att-label">Missing (404)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 15: Loop disabled (loop: false)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 15 — Loop disabled (loop: false)</div>
+<p class="section-desc">
+  With <code>loop: false</code>, prev/next do not wrap: on the first item, Previous does nothing; on the last item, Next does nothing.
+  Use this when you want a linear sequence without cycling back to the start or end.
+</p>
+
+<pre>
+$(<span class="str">'#post-loop-false'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">loop</span>: <span class="kw">false</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-loop-false">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Loop disabled</div><div class="post-time">Case 15</div></div>
+  </div>
+  <div class="post-body">Click any attachment. Use prev/next — they stop at first and last (no wrap).</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="First.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Second.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Last.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 16: Counter hidden (showCounter: false)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 16 — Counter hidden (showCounter: false)</div>
+<p class="section-desc">
+  With <code>showCounter: false</code>, the header does not show the "1 / N" counter.
+  Use this when you want a cleaner overlay without the item index.
+</p>
+
+<pre>
+$(<span class="str">'#post-counter-hidden'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">showCounter</span>: <span class="kw">false</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-counter-hidden">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Counter hidden</div><div class="post-time">Case 16</div></div>
+  </div>
+  <div class="post-body">Click any attachment. The overlay header has no "1 / 3" counter.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo A.jpg" href="https://picsum.photos/id/20/1600/1000"><img src="https://picsum.photos/id/20/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo B.jpg" href="https://picsum.photos/id/30/1600/1000"><img src="https://picsum.photos/id/30/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="pdf" data-title="Doc.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Doc.pdf</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 17: Carousel (carousel.enabled: true)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 17 — Carousel (carousel.enabled: true)</div>
+<p class="section-desc">
+  With <code>carousel: { enabled: true }</code>, a button (thumbnails icon) appears in the overlay header. Click it to show a strip of thumbnails below the stage (centered, 4 visible at a time). Use the arrows to scroll; click a thumbnail to go to that item. Video items show <code>data-thumbnail</code> with a play icon. When there are more than 4 items, prev/next buttons appear (<code>carousel.navThreshold: 4</code>).
+</p>
+
+<pre>
+$(<span class="str">'#post-carousel'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">navThreshold</span>: <span class="num">4</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-carousel">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Carousel view</div><div class="post-time">Case 17</div></div>
+  </div>
+  <div class="post-body">Click any attachment, then click the thumbnails button in the header to show the carousel (centered, 4 thumbnails visible). Use the arrows to scroll; video thumb shows a play icon. With 8 items, prev/next arrows appear.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo 1.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 2.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 3.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4" data-thumbnail="https://picsum.photos/id/40/300/200"><i class="fa-solid fa-film"></i><span class="att-label">Demo.mp4</span></div>
+    <a class="att cv-item" data-type="image" data-title="Photo 4.jpg" href="https://picsum.photos/id/17/1600/1000"><img src="https://picsum.photos/id/17/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 5.jpg" href="https://picsum.photos/id/18/1600/1000"><img src="https://picsum.photos/id/18/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 6.jpg" href="https://picsum.photos/id/19/1600/1000"><img src="https://picsum.photos/id/19/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Spec.pdf</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 18: Carousel with few items (no arrows when ≤ threshold)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 18 — Carousel, few items (no arrows)</div>
+<p class="section-desc">
+  When the number of attachments is <strong>less than or equal to</strong> <code>carousel.navThreshold</code>, the carousel prev/next arrows are hidden. This example has 5 items with <code>carousel.navThreshold: 6</code>, so no arrows appear — all thumbnails fit in the strip.
+</p>
+
+<pre>
+$(<span class="str">'#post-carousel-few'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">navThreshold</span>: <span class="num">6</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-carousel-few">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Carousel — 5 items (no arrows)</div><div class="post-time">Case 18</div></div>
+  </div>
+  <div class="post-body">5 attachments with carousel.navThreshold: 6. Open the carousel; arrows are hidden because 5 ≤ 6.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="A.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="B.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="pdf" data-title="Doc.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Doc.pdf</span></div>
+    <a class="att cv-item" data-type="image" data-title="C.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Clip.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4" data-thumbnail="https://picsum.photos/id/40/300/200"><i class="fa-solid fa-film"></i><span class="att-label">Clip.mp4</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 19: Carousel with all file types
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 19 — Carousel with all file types</div>
+<p class="section-desc">
+  One post with <strong>all built-in types</strong>: image, video, audio, PDF, inline (code), error (cannot preview), HTML, and unsupported (XLSX). Carousel view is enabled so you can see thumbnails or labels for each type in the strip.
+</p>
+
+<pre>
+$(<span class="str">'#post-carousel-all-types'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el, defaultItem) {
+    <span class="kw">var</span> t = $el.data(<span class="str">'type'</span>);
+    <span class="kw">if</span> (t === <span class="str">'inline'</span>) { defaultItem.type = <span class="str">'inline'</span>; defaultItem.content = <span class="str">'// Sample code\nfunction hello() { return true; }'</span>; }
+    <span class="kw">if</span> (t === <span class="str">'html'</span>) { defaultItem.type = <span class="str">'html'</span>; defaultItem.html = <span class="str">'&lt;p style="padding:16px"&gt;Custom HTML content.&lt;/p&gt;'</span>; }
+    <span class="kw">return</span> defaultItem;
+  }
+});
+</pre>
+
+<div class="post" id="post-carousel-all-types">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">All types + carousel</div><div class="post-time">Case 19</div></div>
+  </div>
+  <div class="post-body">Image, video (with/without thumb), audio, PDF, inline, error, HTML, XLSX. Open any and use the carousel to jump between types.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4" data-thumbnail="https://picsum.photos/id/40/300/200"><i class="fa-solid fa-film"></i><span class="att-label">Demo.mp4</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Sound.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3"><i class="fa-solid fa-headphones"></i><span class="att-label">Sound.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Report.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Report.pdf</span></div>
+    <div class="att cv-item" data-type="inline" data-title="script.js"><i class="fa-solid fa-file-code"></i><span class="att-label">script.js</span></div>
+    <div class="att cv-item" data-type="error" data-title="Missing.file" data-message="File not found"><i class="fa-solid fa-triangle-exclamation"></i><span class="att-label">Missing.file</span></div>
+    <div class="att cv-item" data-type="html" data-title="Note.html"><i class="fa-solid fa-file-code"></i><span class="att-label">Note.html</span></div>
+    <div class="att cv-item" data-type="xlsx" data-title="Data.xlsx" data-ext="XLSX" data-size="2 MB" data-download="#"><i class="fa-solid fa-file-excel"></i><span class="att-label">Data.xlsx</span></div>
+    <div class="att cv-item" data-type="video" data-title="NoThumb.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">NoThumb.mp4</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 20: Slideshow with all types
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 20 — Slideshow with all types</div>
+<p class="section-desc">
+  Same set of types as Case 19 with <strong>slideshow</strong> enabled: auto-advances every 4 seconds (configurable). Use the toolbar "Play slideshow" / "Pause slideshow" to control. <code>slideshow: { enabled: true, interval: 4, autoStart: true, advanceMedia: 'interval' }</code>.
+</p>
+
+<pre>
+$(<span class="str">'#post-slideshow-all-types'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">slideshow</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">interval</span>: 4, <span class="kw">autoStart</span>: <span class="kw">true</span>, <span class="kw">advanceMedia</span>: <span class="str">'interval'</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> },
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el, defaultItem) {
+    <span class="kw">var</span> t = $el.data(<span class="str">'type'</span>);
+    <span class="kw">if</span> (t === <span class="str">'inline'</span>) { defaultItem.type = <span class="str">'inline'</span>; defaultItem.content = <span class="str">'// Sample code\nfunction hello() { return true; }'</span>; }
+    <span class="kw">if</span> (t === <span class="str">'html'</span>) { defaultItem.type = <span class="str">'html'</span>; defaultItem.html = <span class="str">'&lt;p style="padding:16px"&gt;Custom HTML content.&lt;/p&gt;'</span>; }
+    <span class="kw">return</span> defaultItem;
+  }
+});
+</pre>
+
+<div class="post" id="post-slideshow-all-types">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Slideshow + all types</div><div class="post-time">Case 20</div></div>
+  </div>
+  <div class="post-body">Image, video, audio, PDF, inline, error, HTML, XLSX. Opens with slideshow on; advances every 4s. Use Play/Pause slideshow in the toolbar.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4" data-thumbnail="https://picsum.photos/id/40/300/200"><i class="fa-solid fa-film"></i><span class="att-label">Demo.mp4</span></div>
+    <div class="att cv-item" data-type="audio" data-title="Sound.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3"><i class="fa-solid fa-headphones"></i><span class="att-label">Sound.mp3</span></div>
+    <div class="att cv-item" data-type="pdf" data-title="Report.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Report.pdf</span></div>
+    <div class="att cv-item" data-type="inline" data-title="script.js"><i class="fa-solid fa-file-code"></i><span class="att-label">script.js</span></div>
+    <div class="att cv-item" data-type="error" data-title="Missing.file" data-message="File not found"><i class="fa-solid fa-triangle-exclamation"></i><span class="att-label">Missing.file</span></div>
+    <div class="att cv-item" data-type="html" data-title="Note.html"><i class="fa-solid fa-file-code"></i><span class="att-label">Note.html</span></div>
+    <div class="att cv-item" data-type="xlsx" data-title="Data.xlsx" data-ext="XLSX" data-size="2 MB" data-download="#"><i class="fa-solid fa-file-excel"></i><span class="att-label">Data.xlsx</span></div>
+    <div class="att cv-item" data-type="video" data-title="NoThumb.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">NoThumb.mp4</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 21: Slideshow with autoStart: false
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 21 — Slideshow (autoStart: false)</div>
+<p class="section-desc">
+  Same as Case 20 but with <code>autoStart: false</code>. The overlay opens with the toolbar showing <strong>Play slideshow</strong>; the slideshow does not start until you click it. Then it shows <strong>Pause slideshow</strong>; click again to pause. <code>slideshow: { enabled: true, interval: 4, autoStart: false, advanceMedia: 'interval' }</code>.
+</p>
+
+<pre>
+$(<span class="str">'#post-slideshow-no-autostart'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">slideshow</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">interval</span>: 4, <span class="kw">autoStart</span>: <span class="kw">false</span>, <span class="kw">advanceMedia</span>: <span class="str">'interval'</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-slideshow-no-autostart">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Slideshow (manual start)</div><div class="post-time">Case 21</div></div>
+  </div>
+  <div class="post-body">Opens with <strong>Play slideshow</strong>; click it to start auto-advance, then <strong>Pause slideshow</strong> to pause. Same interval (4s) when running.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="A.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="B.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="C.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="D.jpg" href="https://picsum.photos/id/17/1600/1000"><img src="https://picsum.photos/id/17/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 22: Stage only (no header, no footer)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 22 — Stage only (no header, no footer)</div>
+<p class="section-desc">
+  With <code>stageOnly: { enabled: true }</code>, the overlay shows only the center stage and prev/next navigation. Header (title, counter, close, theme, fullscreen, carousel) and footer (toolbar, zoom) are hidden. Close with <strong>Escape</strong> or by clicking the backdrop (if <code>overlayClose: true</code>). You can also pass <code>stageOnly: true</code> as a shorthand for <code>{ enabled: true }</code>.
+</p>
+
+<pre>
+$(<span class="str">'#post-stage-only'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">stageOnly</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">overlayClose</span>: <span class="kw">true</span>,
+  <span class="kw">keyboardNav</span>: <span class="kw">true</span>
+});
+</pre>
+
+<div class="post" id="post-stage-only">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Stage only</div><div class="post-time">Case 22</div></div>
+  </div>
+  <div class="post-body">Click any image. Only the image and prev/next arrows are shown. Close with Escape or click outside.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo 1" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 2" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 3" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 23: Stage only with hideNavigation (keyboard-only navigation)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 23 — Stage only with keyboard-only navigation</div>
+<p class="section-desc">
+  Same as Case 22 but with <code>stageOnly: { enabled: true, hideNavigation: true }</code>. The prev/next arrow buttons are hidden; the user moves between images only with <strong>keyboard</strong> (Left/Right arrow keys). Close with Escape or backdrop click.
+</p>
+
+<pre>
+$(<span class="str">'#post-stage-only-keyboard'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">stageOnly</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">hideNavigation</span>: <span class="kw">true</span> },
+  <span class="kw">overlayClose</span>: <span class="kw">true</span>,
+  <span class="kw">keyboardNav</span>: <span class="kw">true</span>
+});
+</pre>
+
+<div class="post" id="post-stage-only-keyboard">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Stage only (keyboard nav)</div><div class="post-time">Case 23</div></div>
+  </div>
+  <div class="post-body">Only the stage is shown; no prev/next buttons. Use <strong>Left</strong> / <strong>Right</strong> arrow keys to move. Close with Escape or click outside.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo 1" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 2" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 3" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 24: Slideshow with hideSlideshowButton (autoStart true, no button)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 24 — Slideshow with hidden Play/Pause button (stage only)</div>
+<p class="section-desc">
+  Combines <code>stageOnly: { enabled: true, hideNavigation: true }</code> with <code>slideshow: { enabled: true, autoStart: true, hideSlideshowButton: true }</code>. All UI is hidden: header, footer, and prev/next buttons. The overlay shows only the stage; items auto-advance every 4 seconds. Use keyboard (Left/Right) to move or Escape to close. No Play/Pause button — close the overlay to stop the slideshow.
+</p>
+
+<pre>
+$(<span class="str">'#post-slideshow-hide-btn'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">stageOnly</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">hideNavigation</span>: <span class="kw">true</span> },
+  <span class="kw">slideshow</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">interval</span>: 4, <span class="kw">autoStart</span>: <span class="kw">true</span>, <span class="kw">hideSlideshowButton</span>: <span class="kw">true</span>, <span class="kw">advanceMedia</span>: <span class="str">'interval'</span> },
+  <span class="kw">overlayClose</span>: <span class="kw">true</span>,
+  <span class="kw">keyboardNav</span>: <span class="kw">true</span>
+});
+</pre>
+
+<div class="post" id="post-slideshow-hide-btn">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Slideshow + stage only (all options hidden)</div><div class="post-time">Case 24</div></div>
+  </div>
+  <div class="post-body">Opens in stage-only mode with no header, footer, or nav buttons. Auto-advances every 4s. Use Left/Right to move, Escape or click outside to close.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="A" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="B" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="C" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 25: WCAG (accessibility)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 25 — WCAG (accessibility)</div>
+<p class="section-desc">
+  With <code>wcag: true</code>, the viewer enables accessibility behavior: <strong>focus trap</strong> (Tab cycles only inside the overlay), <strong>focus save/restore</strong> on open/close, <strong>initial focus</strong> on the close button, and <strong>ARIA</strong> attributes (dialog role, aria-modal, aria-labelledby/describedby, and <code>aria-label</code> on buttons). Use Tab to move between controls; focus returns to the trigger when you close. Inspect the overlay buttons in DevTools to see <code>aria-label</code> on close, attachments, fullscreen, theme, prev/next, zoom, etc.
+</p>
+
+<pre>
+$(<span class="str">'#post-wcag'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">wcag</span>: <span class="kw">true</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: { <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span> }
+});
+</pre>
+
+<div class="post" id="post-wcag">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">WCAG — Accessibility on</div><div class="post-time">Case 25</div></div>
+  </div>
+  <div class="post-body">Click any attachment. Tab through the overlay controls; focus is trapped inside. Close and focus returns to the trigger. Buttons have <code>aria-label</code> for screen readers.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Photo 1" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Photo 2" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Spec.pdf</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 26: canShowTooltip: false (no hover tooltips)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 26 — canShowTooltip: false (no hover tooltips)</div>
+<p class="section-desc">
+  With <code>canShowTooltip: false</code>, the viewer does not show any hover tooltips on header/footer/toolbar buttons. Buttons behave the same; only the custom tooltip popup is disabled. Compare with other cases where hovering a button shows a tooltip.
+</p>
+
+<pre>
+$(<span class="str">'#post-no-tooltip'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">canShowTooltip</span>: <span class="kw">false</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-no-tooltip">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">No tooltips</div><div class="post-time">Case 26</div></div>
+  </div>
+  <div class="post-body">Click any attachment. Hover over close, fullscreen, theme, carousel, prev/next, zoom, or download — no tooltip appears. All other behavior is unchanged.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="A.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="B.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="C.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 27: GIF image
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 27 — GIF image</div>
+<p class="section-desc">
+  GIF files are rendered as <code>image</code> type (use <code>data-type="image"</code> or omit type). The built-in image renderer uses <code>&lt;img src="..."&gt;</code>, so the browser displays and animates the GIF in the viewer with the same zoom and pan behavior as other images.
+</p>
+
+<pre>
+$(<span class="str">'#post-gif'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> }
+});
+<span class="cm">// GIF uses type "image" — no special config needed</span>
+</pre>
+
+<div class="post" id="post-gif">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">GIF image</div><div class="post-time">Case 27</div></div>
+  </div>
+  <div class="post-body">Click an attachment to open the viewer. GIFs animate in the overlay; zoom and pan work as with other images.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Rotating Earth.gif" href="https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"><img src="https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif" alt="" style="object-fit: cover;" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 28: Slideshow with progress bar (showProgress: true)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 28 — Slideshow with progress bar (showProgress: true)</div>
+<p class="section-desc">
+  Same as Case 21 (slideshow, manual start) but with <code>showProgress: true</code>. A thin progress bar appears in the footer and fills over the slide interval to show time until the next slide. Use <strong>Play slideshow</strong> to start; the bar animates each 4 seconds. <code>slideshow: { enabled: true, interval: 4, autoStart: false, showProgress: true }</code>.
+</p>
+
+<pre>
+$(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">slideshow</span>: { <span class="kw">enabled</span>: <span class="kw">true</span>, <span class="kw">interval</span>: 4, <span class="kw">autoStart</span>: <span class="kw">false</span>, <span class="kw">showProgress</span>: <span class="kw">true</span>, <span class="kw">advanceMedia</span>: <span class="str">'interval'</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-slideshow-progress">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Slideshow with progress bar</div><div class="post-time">Case 28</div></div>
+  </div>
+  <div class="post-body">Click any image. Click <strong>Play slideshow</strong> to start; a progress bar in the footer fills until the next slide (4s). Pause to stop the bar.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="A.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="B.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="C.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="D.jpg" href="https://picsum.photos/id/17/1600/1000"><img src="https://picsum.photos/id/17/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="section-title">Programmatic API</div>
+<div class="api-buttons">
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 0)">Case1: Image</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 2)">Case1: Video</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 3)">Case1: Audio</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 4)">Case1: PDF</button>
+  <button class="api-btn" onclick="$('#post-ontoolbar').componentViewer('open', 2)">Case2: PDF+Share</button>
+  <button class="api-btn" onclick="$('#post-onrender').componentViewer('open', 1)">Case3: Custom Video</button>
+  <button class="api-btn" onclick="$('#post-light').componentViewer('open', 0)">Case4: Light Image</button>
+  <button class="api-btn" onclick="$('#post-light').componentViewer('open', 1)">Case4: Light Video</button>
+  <button class="api-btn" onclick="$('#post-supplied').componentViewer('open', 0)">Case5: Custom Supplied</button>
+  <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(0).componentViewer('open', 0)">Case6: Image 1</button>
+  <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(1).componentViewer('open', 0)">Case6: Image 2</button>
+  <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(2).componentViewer('open', 0)">Case6: PDF 1</button>
+  <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(3).componentViewer('open', 0)">Case6: PDF 2</button>
+  <button class="api-btn" onclick="$('#post-pdf-autofit').componentViewer('open', 0)">Case7: PDF autoFit</button>
+  <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 0)">Case8: Video + thumb</button>
+  <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 1)">Case8: Video no thumb</button>
+  <button class="api-btn" onclick="window.open('example-no-libs.html','_blank')">Case9: Open no-libs example</button>
+  <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 0)">Case10: Inline JS</button>
+  <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 1)">Case10: Inline Java</button>
+  <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 2)">Case10: From URL (src)</button>
+  <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 3)">Case10: Custom onRender</button>
+  <button class="api-btn" onclick="$('#post-error').componentViewer('open', 0)">Case11: Cannot preview</button>
+  <button class="api-btn" onclick="$('#post-html').componentViewer('open', 0)">Case12: With title</button>
+  <button class="api-btn" onclick="$('#post-html').componentViewer('open', 1)">Case12: No title</button>
+  <button class="api-btn" onclick="$('#post-html').componentViewer('open', 2)">Case12: iframe</button>
+  <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 0)">Case13: Poll (radio) A</button>
+  <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 1)">Case13: Poll (radio) B</button>
+  <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 2)">Case13: Poll (radio) C</button>
+  <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 0)">Case13: Poll (checkbox) 1</button>
+  <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 1)">Case13: Poll (checkbox) 2</button>
+  <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 2)">Case13: Poll (checkbox) 3</button>
+  <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 0)">Case14: Invalid URL</button>
+  <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 1)">Case14: Missing (404)</button>
+  <button class="api-btn" onclick="$('#post-loop-false').componentViewer('open', 0)">Case15: First</button>
+  <button class="api-btn" onclick="$('#post-loop-false').componentViewer('open', 2)">Case15: Last</button>
+  <button class="api-btn" onclick="$('#post-counter-hidden').componentViewer('open', 0)">Case16: Image</button>
+  <button class="api-btn" onclick="$('#post-counter-hidden').componentViewer('open', 2)">Case16: PDF</button>
+  <button class="api-btn" onclick="$('#post-carousel').componentViewer('open', 0)">Case17: Carousel (first)</button>
+  <button class="api-btn" onclick="$('#post-carousel').componentViewer('open', 4)">Case17: Carousel (PDF)</button>
+  <button class="api-btn" onclick="$('#post-carousel-few').componentViewer('open', 0)">Case18: Carousel few (no arrows)</button>
+  <button class="api-btn" onclick="$('#post-carousel-all-types').componentViewer('open', 0)">Case19: All types (Image)</button>
+  <button class="api-btn" onclick="$('#post-carousel-all-types').componentViewer('open', 4)">Case19: All types (Inline)</button>
+  <button class="api-btn" onclick="$('#post-carousel-all-types').componentViewer('open', 7)">Case19: All types (XLSX)</button>
+  <button class="api-btn" onclick="$('#post-slideshow-all-types').componentViewer('open', 0)">Case20: Slideshow (Image)</button>
+  <button class="api-btn" onclick="$('#post-slideshow-all-types').componentViewer('open', 4)">Case20: Slideshow (Inline)</button>
+  <button class="api-btn" onclick="$('#post-slideshow-all-types').componentViewer('open', 7)">Case20: Slideshow (XLSX)</button>
+  <button class="api-btn" onclick="$('#post-slideshow-no-autostart').componentViewer('open', 0)">Case21: Slideshow autoStart false</button>
+  <button class="api-btn" onclick="$('#post-stage-only').componentViewer('open', 0)">Case22: Stage only</button>
+  <button class="api-btn" onclick="$('#post-stage-only-keyboard').componentViewer('open', 0)">Case23: Stage only (keyboard nav)</button>
+  <button class="api-btn" onclick="$('#post-slideshow-hide-btn').componentViewer('open', 0)">Case24: Slideshow hide button</button>
+  <button class="api-btn" onclick="$('#post-wcag').componentViewer('open', 0)">Case25: WCAG (Image)</button>
+  <button class="api-btn" onclick="$('#post-wcag').componentViewer('open', 2)">Case25: WCAG (PDF)</button>
+  <button class="api-btn" onclick="$('#post-no-tooltip').componentViewer('open', 0)">Case26: No tooltips</button>
+  <button class="api-btn" onclick="$('#post-gif').componentViewer('open', 0)">Case27: GIF</button>
+  <button class="api-btn" onclick="$('#post-slideshow-progress').componentViewer('open', 0)">Case28: Slideshow + progress</button>
+</div>
+
+<div class="section-title">How It All Fits Together</div>
+<pre>
+<span class="cm">// Renderer priority:</span>
+<span class="cm">//   1. onRender(item, $stage, viewer) — customer full override (first shot)</span>
+<span class="cm">//   2. Built-in renderer (image/video/audio/pdf/inline/error/html)</span>
+<span class="cm">//   3. Unsupported "no preview" card</span>
+<span class="cm">//</span>
+<span class="cm">// Toolbar priority:</span>
+<span class="cm">//   onRender returns { toolbar } → full replacement (no auto download/zoom)</span>
+<span class="cm">//   Built-in renderer toolbar + toolbarItems + download + zoom(image only)</span>
+<span class="cm">//     → passed through onToolbar(item, toolbar, viewer) for modification</span>
+<span class="cm">//</span>
+<span class="cm">// What each type shows (built-in mode):</span>
+<span class="cm">//   image → [toolbarItems] + zoom slider + download    (zoom/pan built-in)</span>
+<span class="cm">//   video → jPlayer in stage, [toolbarItems] + download</span>
+<span class="cm">//   audio → jPlayer in stage, [toolbarItems] + download</span>
+<span class="cm">//   pdf   → pdf.js in stage, [thumbs|◁|page|▷|zoom±|rotate|print] + [toolbarItems] + download</span>
+<span class="cm">//   inline → white bg + line numbers (item.content or item.src), [toolbarItems] + download</span>
+<span class="cm">//   error  → cannot-preview card (same as unsupported: icon, name, message, Download); onRender can override</span>
+<span class="cm">//   html   → user-provided HTML only; no toolbar, no download; title/counter hidden if no title</span>
+<span class="cm">//   other → "no preview" card, [toolbarItems] + download</span>
+<span class="cm">//   pollOption → when enabled and item.pollOptionLabel, row above toolbar with option label + radio/checkbox; onSelect(item, selected, viewer)</span>
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TOOLBAR BUILDER REFERENCE
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Toolbar Builder Reference</div>
+<p class="section-desc">
+  A toolbar is an array of items. Each item can be an object, a separator string, or a raw DOM element.
+</p>
+
+<pre>
+<span class="cm">// ─── Toolbar Item Schema ─────────────────────────────────</span>
+{
+  <span class="kw">id</span>:        <span class="str">'download'</span>,               <span class="cm">// unique id → CSS class cv-tb-download</span>
+  <span class="kw">icon</span>:      <span class="str">'&lt;svg&gt;...&lt;/svg&gt;'</span>,          <span class="cm">// HTML string or CSS class name</span>
+  <span class="kw">label</span>:     <span class="str">'Download'</span>,                <span class="cm">// tooltip text</span>
+  <span class="kw">showLabel</span>: <span class="kw">false</span>,                     <span class="cm">// if true, label shows as text beside icon</span>
+  <span class="kw">className</span>: <span class="str">'my-custom-class'</span>,         <span class="cm">// extra CSS class on the button</span>
+  <span class="kw">visible</span>:   <span class="kw">true</span>,                      <span class="cm">// boolean or function(item, viewer)</span>
+  <span class="fn">onClick</span>:   <span class="kw">function</span>(item, viewer) {}  <span class="cm">// click handler</span>
+}
+
+<span class="cm">// ─── Separator ───────────────────────────────────────────</span>
+<span class="str">'separator'</span>    <span class="cm">// or '-'</span>
+
+<span class="cm">// ─── Raw DOM Element ─────────────────────────────────────</span>
+$(<span class="str">'&lt;span class="page-label"&gt;Page 1&lt;/span&gt;'</span>)[0]
+
+<span class="cm">// ─── Conditional Visibility ──────────────────────────────</span>
+{
+  <span class="kw">id</span>: <span class="str">'extract'</span>,
+  <span class="kw">visible</span>: <span class="kw">function</span>(item, viewer) {
+    <span class="kw">return</span> item.type === <span class="str">'image'</span> || item.type === <span class="str">'pdf'</span>;
+  },
+  <span class="fn">onClick</span>: <span class="kw">function</span>(item) { ... }
+}
+
+<span class="cm">// ─── Icon as CSS class (Font Awesome, etc.) ──────────────</span>
+{ <span class="kw">id</span>: <span class="str">'share'</span>, <span class="kw">icon</span>: <span class="str">'fa-solid fa-share-nodes'</span>, <span class="kw">label</span>: <span class="str">'Share'</span> }
+
+<span class="cm">// ─── Icon as SVG HTML string ─────────────────────────────</span>
+{ <span class="kw">id</span>: <span class="str">'zoom'</span>, <span class="kw">icon</span>: <span class="str">'&lt;svg width="18" height="18" ...&gt;...&lt;/svg&gt;'</span> }
+
+<span class="cm">// ─── Button with visible label text ──────────────────────</span>
+{ <span class="kw">id</span>: <span class="str">'save'</span>, <span class="kw">icon</span>: <span class="str">'fa-solid fa-floppy-disk'</span>, <span class="kw">label</span>: <span class="str">'Save'</span>, <span class="kw">showLabel</span>: <span class="kw">true</span> }
+
+<span class="cm">// ─── Full Example: building a toolbar array ──────────────</span>
+<span class="kw">var</span> myToolbar = [
+  { <span class="kw">id</span>: <span class="str">'prev-page'</span>, <span class="kw">icon</span>: <span class="str">'&lt;svg&gt;◁&lt;/svg&gt;'</span>, <span class="kw">label</span>: <span class="str">'Prev'</span>,
+    <span class="fn">onClick</span>: <span class="kw">function</span>() { goToPrevPage(); } },
+
+  $(<span class="str">'&lt;span&gt;Page 1 / 10&lt;/span&gt;'</span>)[0],    <span class="cm">// raw DOM element</span>
+
+  { <span class="kw">id</span>: <span class="str">'next-page'</span>, <span class="kw">icon</span>: <span class="str">'&lt;svg&gt;▷&lt;/svg&gt;'</span>, <span class="kw">label</span>: <span class="str">'Next'</span>,
+    <span class="fn">onClick</span>: <span class="kw">function</span>() { goToNextPage(); } },
+
+  <span class="str">'separator'</span>,
+
+  { <span class="kw">id</span>: <span class="str">'print'</span>, <span class="kw">icon</span>: <span class="str">'fa-solid fa-print'</span>, <span class="kw">label</span>: <span class="str">'Print'</span>,
+    <span class="kw">visible</span>: <span class="kw">function</span>(item) { <span class="kw">return</span> item.type === <span class="str">'pdf'</span>; },
+    <span class="fn">onClick</span>: <span class="kw">function</span>() { window.print(); } },
+
+  { <span class="kw">id</span>: <span class="str">'download'</span>, <span class="kw">icon</span>: $.fn.componentViewer.Icons.download,
+    <span class="kw">label</span>: <span class="str">'Download'</span>,
+    <span class="fn">onClick</span>: <span class="kw">function</span>(item) { <span class="cm">/* download logic */</span> } }
+];
+
+<span class="cm">// ─── Where toolbars are used ─────────────────────────────</span>
+
+<span class="cm">// 1. Default custom items (shown alongside built-in zoom/download)</span>
+<span class="kw">toolbarItems</span>: myToolbar
+
+<span class="cm">// 2. Returned from onRender (full replacement, no auto download/zoom)</span>
+<span class="fn">onRender</span>: <span class="kw">function</span>(item, $stage, viewer) {
+  <span class="kw">return</span> { <span class="kw">toolbar</span>: myToolbar };
+}
+
+<span class="cm">// 3. Returned from built-in renderers (PDF page nav, etc.)</span>
+<span class="cm">//    → merged with toolbarItems + auto download</span>
+<span class="cm">//    → passed through onToolbar for modification</span>
+
+<span class="cm">// 4. Modified via onToolbar</span>
+<span class="fn">onToolbar</span>: <span class="kw">function</span>(item, defaultToolbar, viewer) {
+  defaultToolbar.push(<span class="str">'separator'</span>);
+  defaultToolbar.push({ <span class="kw">id</span>: <span class="str">'share'</span>, <span class="fn">onClick</span>: fn });
+  <span class="kw">return</span> defaultToolbar;
+}
+</pre>
+
+<div class="section-title">Supported Formats Resolution</div>
+<pre>
+<span class="cm">// Priority order:</span>
+<span class="cm">//   1. data-supplied attribute on the element (per-item)</span>
+<span class="cm">//   2. supportedVideoFormats / supportedAudioFormats (per-post init)</span>
+<span class="cm">//   3. Auto-detect from file extension</span>
+<span class="cm">//</span>
+<span class="cm">// Extension → jPlayer format mapping:</span>
+<span class="cm">//   mp4/m4v → m4v    webm → webmv    ogv → ogv    flv → flv</span>
+<span class="cm">//   mp3 → mp3    m4a → m4a    ogg/oga → oga    wav → wav</span>
+<span class="cm">//</span>
+<span class="cm">// Examples:</span>
+
+<span class="cm">// Separate formats for video and audio</span>
+$(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">supportedVideoFormats</span>: <span class="str">'m4v, webmv'</span>,
+  <span class="kw">supportedAudioFormats</span>: <span class="str">'mp3, oga'</span>
+});
+
+<span class="cm">// Per-item override via data attribute (highest priority)</span>
+<span class="cm">// &lt;div class="cv-item" data-type="video" data-supplied="webmv" data-src="clip.webm"&gt;</span>
+
+<span class="cm">// Auto-detect (default — no override needed)</span>
+<span class="cm">// &lt;div class="cv-item" data-type="video" data-src="clip.mp4"&gt;  → supplied: 'm4v'</span>
+<span class="cm">// &lt;div class="cv-item" data-type="audio" data-src="song.mp3"&gt;  → supplied: 'mp3'</span>
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jplayer/2.9.2/jplayer/jquery.jplayer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="component-viewer.js"></script>
+
+<script>
+(function() {
+  var $log = $('#log');
+  function log(msg) {
+    var div = document.createElement('div');
+    div.textContent = '[' + new Date().toLocaleTimeString() + '] ' + (msg != null ? String(msg) : '');
+    $log.prepend(div);
+  }
+
+  var TB_EXTRACT = {
+    id: 'extract',
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    label: 'Extract Text',
+    onClick: function(item) { log('Extract: ' + item.title); alert('Extract text from: ' + item.title); }
+  };
+
+  var TB_DELETE = {
+    id: 'delete',
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    label: 'Delete',
+    onClick: function(item) { if (confirm('Delete ' + item.title + '?')) log('Deleted: ' + item.title); }
+  };
+
+  var TB_SHARE = {
+    id: 'share',
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+    label: 'Share',
+    onClick: function(item) { log('Share: ' + item.title); alert('Share: ' + item.title); }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 1: All built-in renderers
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-builtin').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+
+    toolbarItems: [ TB_EXTRACT, 'separator', TB_DELETE ],
+
+    onDownload: function(item) {
+      log('Download: ' + item.title);
+      var url = item.downloadUrl || item.src;
+      if (url && url !== '#') {
+        var a = document.createElement('a');
+        a.href = url; a.download = item.title; a.target = '_blank';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+    },
+
+    onLoading: function(item) { log('onLoading [' + item.type + '] ' + item.title); },
+    onOpen:    function(item) { log('onOpen    [' + item.type + '] ' + item.title); },
+    onClose:   function(item) { log('onClose   [' + item.type + '] ' + item.title); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 2: onToolbar — modify built-in toolbar per type
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-ontoolbar').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+
+    toolbarItems: [ TB_EXTRACT, 'separator', TB_DELETE ],
+
+    onToolbar: function(item, defaultToolbar, viewer) {
+      log('onToolbar: modifying toolbar for [' + item.type + ']');
+
+      if (item.type === 'pdf') {
+        defaultToolbar.push('separator');
+        defaultToolbar.push(TB_SHARE);
+        return defaultToolbar;
+      }
+
+      if (item.type === 'video') {
+        defaultToolbar.push('separator');
+        defaultToolbar.push({
+          id: 'clip',
+          icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>',
+          label: 'Clip',
+          onClick: function(it) { log('Clip: ' + it.title); alert('Clip video: ' + it.title); }
+        });
+        return defaultToolbar;
+      }
+
+      if (item.type === 'image') {
+        return defaultToolbar.filter(function(tb) {
+          return tb !== 'separator' && (!tb.id || tb.id !== 'delete');
+        });
+      }
+    },
+
+    onOpen: function(item) { log('Case2 onOpen [' + item.type + '] ' + item.title); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 3: onRender — full customer override for some types
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-onrender').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+
+    toolbarItems: [ TB_DELETE ],
+
+    onRender: function(item, $stage, viewer) {
+
+      /* Customer handles VIDEO themselves (native <video>) */
+      if (item.type === 'video') {
+        log('onRender: custom video (native HTML5)');
+        var $v = $(
+          '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000">' +
+            '<video controls autoplay style="max-width:100%;max-height:100%"><source src="' + item.src + '" /></video>' +
+          '</div>'
+        );
+        var el = $v.find('video')[0];
+        $stage.append($v);
+
+        return {
+          toolbar: [
+            {
+              id: 'fullscreen', label: 'Fullscreen',
+              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
+              onClick: function() { if (el.requestFullscreen) el.requestFullscreen(); }
+            },
+            'separator',
+            { id: 'download', label: 'Download', icon: $.fn.componentViewer.Icons.download,
+              onClick: function(it) {
+                var a = document.createElement('a');
+                a.href = it.src; a.download = it.title; a.target = '_blank';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              }
+            }
+          ],
+          destroy: function() { log('destroy: custom video'); el.pause(); el.src = ''; }
+        };
+      }
+
+      /* Customer handles PDF themselves (simple iframe) */
+      if (item.type === 'pdf') {
+        log('onRender: custom PDF (iframe)');
+        $stage.append(
+          '<iframe style="width:100%;height:100%;border:none;border-radius:4px;background:#fff" src="' + item.src + '#toolbar=1" allowfullscreen></iframe>'
+        );
+        return {
+          toolbar: [
+            { id: 'open-tab', label: 'Open in tab',
+              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+              onClick: function(it) { window.open(it.src, '_blank'); }
+            }
+          ]
+        };
+      }
+
+      /* Audio & Image: don't handle → fall through to built-in */
+    },
+
+    onOpen: function(item) { log('Case3 onOpen [' + item.type + '] ' + item.title); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 4: Light theme
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-light').componentViewer({
+    theme: 'light',
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    toolbarItems: [ TB_EXTRACT ],
+    onOpen: function(item) { log('Case4 (light) onOpen [' + item.type + '] ' + item.title); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 5: Custom jPlayer supplied format
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-supplied').componentViewer({
+    toolbar: { download: true, zoom: true },
+
+    supportedVideoFormats: 'm4v, webmv',
+    supportedAudioFormats: 'mp3, oga',
+
+    onOpen: function(item) { log('Case5 onOpen [' + item.type + '] ' + item.title + ' (supplied: ' + (item.supplied || 'auto') + ')'); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 6: Single-item viewer (one image / one PDF only)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-single .cv-single-item').each(function() {
+    $(this).componentViewer({
+      selector: '.cv-item',
+      toolbar: { download: true, zoom: true },
+      pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+      onOpen: function(item) { log('Case6 (single) onOpen [' + item.type + '] ' + item.title); }
+    });
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 7: PDF with autoFit option
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-pdf-autofit').componentViewer({
+    selector: '.cv-item',
+    toolbar: { download: true, zoom: true },
+    pdf: {
+      workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+      autoFit: true,
+      autoFitMaxScale: 2.5
+    },
+    onOpen: function(item) { log('Case7 (PDF autoFit) onOpen [' + item.type + '] ' + item.title); }
+  });
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 8: Video with custom thumbnail (poster) URL
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-video-thumb').componentViewer({
+    toolbar: { download: true, zoom: true },
+    onOpen: function(item) { log('Case8 onOpen [' + item.type + '] ' + item.title + (item.thumbnailUrl ? ' (with poster)' : '')); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 9: Same post (uses jPlayer/pdf.js on this page); see example-no-libs.html for fallback
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-no-libs').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case9 onOpen [' + item.type + '] ' + item.title + ' (this page has libs; open example-no-libs.html for native/iframe)'); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 10: Inline (source code — white bg, line numbers; onRender for custom HTML)
+     ═══════════════════════════════════════════════════════════════ */
+
+  var INLINE_SNIPPETS = {
+    'demo-js': 'function hello() {\n  console.log("Hello from demo.js");\n  return true;\n}\n\n// End of file',
+    'sample-java': 'public class Sample {\n  public static void main(String[] args) {\n    System.out.println("Hello");\n  }\n}\n'
+  };
+
+  $('#post-inline').componentViewer({
+    toolbar: { download: true },
+    itemData: function($el) {
+      var type = $el.data('type');
+      var defaultItem = {
+        type: $el.data('type') || 'image',
+        src: $el.data('src') || $el.attr('href') || $el.find('img').attr('src'),
+        title: $el.data('title') || $el.attr('title') || '',
+        downloadUrl: $el.data('download') || null,
+        fileExt: $el.data('ext') || null,
+        fileSize: $el.data('size') || null,
+        mimeType: $el.data('mime') || null,
+        supplied: $el.data('supplied') || null,
+        thumbnailUrl: $el.data('thumbnail') || $el.data('poster') || null
+      };
+      if (type === 'inline') {
+        var key = $el.data('key');
+        var src = $el.data('src');
+        var item = { type: 'inline', title: $el.data('title') || 'File', fileExt: $el.data('ext') || null };
+        if (key === 'custom') {
+          item.customHtml = $('<div class="cv-inline-wrap"><div class="cv-inline-body" style="padding:20px">' +
+            '<p style="margin:0 0 12px; font-size:14px; color:#24292f">Custom content from <strong>onRender</strong>: you provided this HTML element.</p>' +
+            '<pre style="background:#f6f8fa; padding:12px; border-radius:6px; margin:0; font-size:13px">$stage.append(item.customHtml);\nreturn { toolbar: [] };</pre>' +
+            '</div></div>');
+        } else if (src) {
+          item.src = src;
+        } else {
+          item.content = INLINE_SNIPPETS[key] || '// No content for key: ' + key;
+        }
+        return item;
+      }
+      return defaultItem;
+    },
+    onRender: function(item, $stage, viewer) {
+      if (item.type === 'inline' && item.customHtml) {
+        $stage.append(item.customHtml);
+        return { toolbar: [] };
+      }
+    },
+    onOpen: function(item) { log('Case10 onOpen [inline] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 11: Error (type "error" — built-in error card; onRender for custom HTML)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-error').componentViewer({
+    toolbar: { download: true },
+    onOpen: function(item) { log('Case11 onOpen [error] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 12: HTML (user-provided HTML; no toolbar, no download)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-html').componentViewer({
+    itemData: function($el) {
+      var type = $el.data('type');
+      var defaultItem = {
+        type: $el.data('type') || 'image',
+        src: $el.data('src') || $el.attr('href') || $el.find('img').attr('src'),
+        title: $el.data('title') || $el.attr('title') || '',
+        downloadUrl: $el.data('download') || null,
+        fileExt: $el.data('ext') || null,
+        fileSize: $el.data('size') || null,
+        mimeType: $el.data('mime') || null,
+        supplied: $el.data('supplied') || null,
+        thumbnailUrl: $el.data('thumbnail') || $el.data('poster') || null,
+        message: $el.data('message') || null,
+        html: $el.data('html') || null
+      };
+      if (type === 'html') {
+        var key = $el.data('key');
+        var item = { type: 'html', html: null, title: $el.data('title') || '' };
+        if (key === 'with-title') {
+          item.title = 'Custom card';
+          item.html = '<div style="padding:24px;text-align:center;max-width:400px;margin:0 auto">' +
+            '<h3 style="margin:0 0 12px;font-size:18px;color:#24292f">User HTML content</h3>' +
+            '<p style="margin:0;color:#57606a;font-size:14px">Type <code>html</code>: no toolbar, no download. Title is shown when provided.</p>' +
+            '</div>';
+        } else if (key === 'no-title') {
+          item.title = '';
+          item.html = '<div style="padding:24px;text-align:center;max-width:400px;margin:0 auto">' +
+            '<p style="margin:0;color:#57606a;font-size:14px">No title given → title and counter are hidden. Only your HTML and the close button.</p>' +
+            '</div>';
+        } else if (key === 'iframe') {
+          item.title = 'Embedded page';
+          item.html = '<div style="width:100%;height:100%;min-height:300px">' +
+            '<iframe src="https://workdrive.zohoexternal.com/embed/jkk888d994dde681f432cb38014a271551eb3" title="Team Connect" style="width:100%;height:100%;border:none;display:block;border-radius:4px"></iframe>' +
+            '</div>';
+        }
+        return item;
+      }
+      return defaultItem;
+    },
+    onOpen: function(item) { log('Case12 onOpen [html] ' + (item.title || '(no title)')); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 13: Poll options (option label + radio above toolbar)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-poll').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pollOption: {
+      enabled: true,
+      mode: 'radio',
+      onSelect: function(item, selected, viewer) {
+        log('Case13 pollOption onSelect: ' + (item.pollOptionLabel || item.pollOptionId) + ' selected=' + selected);
+        if (selected) alert('You selected: ' + (item.pollOptionLabel || item.pollOptionId));
+      }
+    },
+    onOpen: function(item) { log('Case13 onOpen [poll radio] ' + item.title + ' → ' + (item.pollOptionLabel || '')); }
+  });
+
+  $('#post-poll-checkbox').componentViewer({
+    toolbar: { download: true, zoom: true },
+    pollOption: {
+      enabled: true,
+      mode: 'checkbox',
+      onSelect: function(item, selected, viewer) {
+        log('Case13 (checkbox) onSelect: ' + (item.pollOptionLabel || item.pollOptionId) + ' selected=' + selected);
+        var set = viewer._pollSelectedSet;
+        var count = set ? set.size : 0;
+        if (count > 0) log('  → total selected: ' + count);
+      }
+    },
+    onOpen: function(item) { log('Case13 onOpen [poll checkbox] ' + item.title + ' → ' + (item.pollOptionLabel || '')); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 14: Image failure (non-previewable — error card, no download)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-image-failure').componentViewer({
+    toolbar: { download: true, zoom: true },
+    onOpen: function(item) { log('Case14 onOpen [image failure] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 15: Loop disabled (loop: false)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-loop-false').componentViewer({
+    loop: false,
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case15 onOpen [loop: false] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 16: Counter hidden (showCounter: false)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-counter-hidden').componentViewer({
+    showCounter: false,
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case16 onOpen [showCounter: false] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 17: Carousel (carousel.enabled: true)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-carousel').componentViewer({
+    carousel: { enabled: true },
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case17 onOpen [carousel] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 18: Carousel with few items (no arrows when ≤ threshold)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-carousel-few').componentViewer({
+    carousel: { enabled: true, navThreshold: 6 },
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case18 onOpen [carousel few] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 19: Carousel with all file types
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-carousel-all-types').componentViewer({
+    carousel: { enabled: true },
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    itemData: function($el, defaultItem) {
+      var t = $el.data('type');
+      if (t === 'inline') {
+        defaultItem.type = 'inline';
+        defaultItem.title = defaultItem.title || 'script.js';
+        defaultItem.content = '// Sample code\nfunction hello() { return true; }';
+      }
+      if (t === 'html') {
+        defaultItem.type = 'html';
+        defaultItem.title = defaultItem.title || 'Note.html';
+        defaultItem.html = '<p style="padding:16px; color:#e0e0e0">Custom HTML content.</p>';
+      }
+      return defaultItem;
+    },
+    onOpen: function(item) { log('Case19 onOpen [all types] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 20: Slideshow with all types
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-slideshow-all-types').componentViewer({
+    carousel: { enabled: true },
+    slideshow: { enabled: true, interval: 4, autoStart: true, advanceMedia: 'interval' },
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    itemData: function($el, defaultItem) {
+      var t = $el.data('type');
+      if (t === 'inline') {
+        defaultItem.type = 'inline';
+        defaultItem.title = defaultItem.title || 'script.js';
+        defaultItem.content = '// Sample code\nfunction hello() { return true; }';
+      }
+      if (t === 'html') {
+        defaultItem.type = 'html';
+        defaultItem.title = defaultItem.title || 'Note.html';
+        defaultItem.html = '<p style="padding:16px; color:#e0e0e0">Custom HTML content.</p>';
+      }
+      return defaultItem;
+    },
+    onOpen: function(item) { log('Case20 onOpen [slideshow] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 21: Slideshow with autoStart: false
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-slideshow-no-autostart').componentViewer({
+    carousel: { enabled: true },
+    slideshow: { enabled: true, interval: 4, autoStart: false, advanceMedia: 'interval' },
+    toolbar: { download: true, zoom: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case21 onOpen [slideshow no autostart] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 22: Stage only (no header, no footer)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-stage-only').componentViewer({
+    stageOnly: { enabled: true },
+    overlayClose: true,
+    keyboardNav: true,
+    onOpen: function(item) { log('Case22 onOpen [stage only] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 23: Stage only with hideNavigation (keyboard-only)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-stage-only-keyboard').componentViewer({
+    stageOnly: { enabled: true, hideNavigation: true },
+    overlayClose: true,
+    keyboardNav: true,
+    onOpen: function(item) { log('Case23 onOpen [stage only keyboard] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 24: Slideshow with hideSlideshowButton (autoStart true)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-slideshow-hide-btn').componentViewer({
+    stageOnly: { enabled: true, hideNavigation: true },
+    slideshow: { enabled: true, interval: 4, autoStart: true, hideSlideshowButton: true, advanceMedia: 'interval' },
+    overlayClose: true,
+    keyboardNav: true,
+    onOpen: function(item) { log('Case24 onOpen [slideshow hide btn] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 25: WCAG (accessibility)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-wcag').componentViewer({
+    wcag: true,
+    toolbar: { download: true, zoom: true },
+    carousel: { enabled: true },
+    pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
+    onOpen: function(item) { log('Case25 onOpen [wcag] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 26: canShowTooltip: false
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-no-tooltip').componentViewer({
+    canShowTooltip: false,
+    toolbar: { download: true, zoom: true },
+    carousel: { enabled: true },
+    onOpen: function(item) { log('Case26 onOpen [no tooltip] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 27: GIF image
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-gif').componentViewer({
+    toolbar: { download: true, zoom: true },
+    carousel: { enabled: true },
+    onOpen: function(item) { log('Case27 onOpen [GIF] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 28: Slideshow with showProgress: true
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-slideshow-progress').componentViewer({
+    carousel: { enabled: true },
+    slideshow: { enabled: true, interval: 4, autoStart: false, showProgress: true, advanceMedia: 'interval' },
+    toolbar: { download: true, zoom: true },
+    onOpen: function(item) { log('Case28 onOpen [slideshow+progress] ' + item.title); }
+  });
+
+})();
+</script>
+</body>
+</html>
