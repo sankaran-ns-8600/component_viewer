@@ -407,7 +407,7 @@ $gallery.componentViewer('open', 2);  // Open third item
 ## File structure
 
 ```
-component-viewer-v2/
+component-viewer/
 ├── component-viewer.js    # Plugin script
 ├── component-viewer.css   # Styles
 ├── README.md              # This documentation
