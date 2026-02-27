@@ -1,8 +1,10 @@
 # ComponentViewer
 
+[![npm version](https://img.shields.io/npm/v/@sankaran-8600/component-viewer.svg)](https://www.npmjs.com/package/@sankaran-8600/component-viewer)
+
 A jQuery plugin that opens attachments (images, video, audio, PDF, inline content, and more) in a shared overlay with a consistent toolbar, themes, and optional accessibility (WCAG) support. Built for feed- or post-style UIs where each container has its own set of items.
 
-**License:** MIT
+**Install from npm:** [`npm i @sankaran-8600/component-viewer`](https://www.npmjs.com/package/@sankaran-8600/component-viewer) · **License:** MIT
 
 ---
 
@@ -407,7 +409,7 @@ $gallery.componentViewer('open', 2);  // Open third item
 ## File structure
 
 ```
-component-viewer-main/
+component-viewer-v2/
 ├── component-viewer.js    # Plugin script
 ├── component-viewer.css   # Styles
 ├── README.md              # This documentation
