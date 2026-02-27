@@ -37,4 +37,5 @@ jobs:
       - name: Publish to npm
         run: npm publish
         env:
+          # Create token at https://www.npmjs.com/settings/~youruser/tokens (Automation type) and add as repo secret "npm_token"
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
