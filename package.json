@@ -23,6 +23,14 @@
   },
   "keywords": ["jquery", "viewer", "overlay", "image", "video", "pdf", "attachment"],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sankaran-8600/component-viewer-v2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sankaran-8600/component-viewer-v2/issues"
+  },
+  "homepage": "https://github.com/sankaran-8600/component-viewer-v2#readme",
   "devDependencies": {
     "terser": "^5.36.0"
   }
