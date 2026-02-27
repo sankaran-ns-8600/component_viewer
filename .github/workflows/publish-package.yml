@@ -1,4 +1,4 @@
-# This workflow builds and publishes to npm when a release is created.
+# This workflow builds and publishes the same package to npm and to GitHub Packages on release.
 # Uses npm install (not npm ci) so no package-lock.json is required.
 
 name: Node.js Package
@@ -37,3 +37,28 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
+
+  publish-github-packages:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com/
+          scope: '@${{ github.repository_owner }}'
+      - name: Set package scope for GitHub Packages
+        run: |
+          sed -i 's|"@[^/]*/component-viewer"|"@${{ github.repository_owner }}/component-viewer"|' package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Publish to GitHub Packages
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
