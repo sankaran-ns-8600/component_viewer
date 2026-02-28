@@ -1,6 +1,6 @@
 {
   "name": "@sankaran-8600/component-viewer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "jQuery plugin for attachment and media preview in an overlay",
   "main": "component-viewer.js",
   "style": "component-viewer.css",
