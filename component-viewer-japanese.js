@@ -1,5 +1,8 @@
 /**
- * ComponentViewer
+ * ComponentViewer (Japanese / 日本語)
+ *
+ * Same as component-viewer.js but with DEFAULT_STRINGS in Japanese for I18N demo.
+ * Use this file instead of component-viewer.js when you want Japanese UI strings by default.
  *
  * Common outer wrapper + toolbar with built-in renderers.
  *
@@ -100,13 +103,6 @@
     },
 
     /**
-     * Video options. onGetHdUrl: function(item, viewer) — return URL for HD/high-quality source, or null.
-     * When returned URL is valid, an "HD" button is shown; clicking it switches playback to that URL from the current timestamp.
-     * You can also set item.hdUrl in itemData to provide the HD URL per item (takes precedence if onGetHdUrl not used).
-     */
-    video: { onGetHdUrl: null },
-
-    /**
      * Supported media formats (jPlayer supplied string).
      * Format is derived from file extension; these options restrict/override.
      * Use supportedVideoFormats for video, supportedAudioFormats for audio.
@@ -171,58 +167,59 @@
      DEFAULT STRINGS (I18N) — single source for all user-facing text
      ═══════════════════════════════════════════════════════════════════ */
 
+  /* Japanese (日本語) — same keys as English; replace DEFAULT_STRINGS to localize */
   var DEFAULT_STRINGS = {
-    close: 'Close',
-    fullscreen: 'Fullscreen',
-    exitFullscreen: 'Exit fullscreen',
-    attachments: 'Attachments',
-    showAttachments: 'Show attachments',
-    scrollCarouselLeft: 'Scroll carousel left',
-    scrollCarouselRight: 'Scroll carousel right',
-    previousItem: 'Previous item',
-    nextItem: 'Next item',
-    zoomOut: 'Zoom out',
-    zoomLevel: 'Zoom level',
-    zoomIn: 'Zoom in',
-    switchToLightMode: 'Switch to light mode',
-    switchToDarkMode: 'Switch to dark mode',
-    playSlideshow: 'Play slideshow',
-    pauseSlideshow: 'Pause slideshow',
-    download: 'Download',
-    downloadSource: 'Download source',
-    invalidImageUrl: 'Invalid or unsafe image URL',
-    imageLoadFailed: 'Image could not be loaded',
-    play: 'Play',
-    pause: 'Pause',
-    playbackSpeed: 'Playback Speed',
-    cyclePlaybackSpeed: 'Cycle playback speed',
+    close: '閉じる',
+    fullscreen: '全画面',
+    exitFullscreen: '全画面を終了',
+    attachments: '添付',
+    showAttachments: '添付を表示',
+    scrollCarouselLeft: 'カルーセルを左に',
+    scrollCarouselRight: 'カルーセルを右に',
+    previousItem: '前の項目',
+    nextItem: '次の項目',
+    zoomOut: '縮小',
+    zoomLevel: 'ズームレベル',
+    zoomIn: '拡大',
+    switchToLightMode: 'ライトモードに切り替え',
+    switchToDarkMode: 'ダークモードに切り替え',
+    playSlideshow: 'スライドショーを再生',
+    pauseSlideshow: 'スライドショーを一時停止',
+    download: 'ダウンロード',
+    downloadSource: '元をダウンロード',
+    invalidImageUrl: '無効または安全でない画像URL',
+    imageLoadFailed: '画像を読み込めませんでした',
+    play: '再生',
+    pause: '一時停止',
+    playbackSpeed: '再生速度',
+    cyclePlaybackSpeed: '再生速度を切り替え',
     hd: 'HD',
-    toggleHd: 'Toggle HD',
-    mute: 'Mute',
-    unmute: 'Unmute',
-    thumbnails: 'Thumbnails',
-    previousPage: 'Previous Page',
-    nextPage: 'Next Page',
-    rotate: 'Rotate',
-    print: 'Print',
+    toggleHd: 'HD切り替え',
+    mute: 'ミュート',
+    unmute: 'ミュート解除',
+    thumbnails: 'サムネイル',
+    previousPage: '前のページ',
+    nextPage: '次のページ',
+    rotate: '回転',
+    print: '印刷',
     pdf: 'PDF',
-    previewNotAvailable: 'Preview is not available for this file',
-    file: 'File',
-    audio: 'Audio',
-    couldNotLoadFileInline: 'Could not load file for inline view',
-    noContentInline: 'No content or invalid URL for inline view',
-    noHtmlProvided: 'No HTML provided for html view',
-    typeVideo: 'Video',
-    typeCode: 'Code',
+    previewNotAvailable: 'このファイルのプレビューはありません',
+    file: 'ファイル',
+    audio: 'オーディオ',
+    couldNotLoadFileInline: 'インラインビュー用にファイルを読み込めませんでした',
+    noContentInline: 'コンテンツがありません、または無効なURL',
+    noHtmlProvided: 'HTMLが提供されていません',
+    typeVideo: 'ビデオ',
+    typeCode: 'コード',
     typeHtml: 'HTML',
     typeError: '—',
-    carouselItemLabel: 'Item %1 of %2',
-    playPause: 'Play / Pause',
-    muteUnmute: 'Mute / Unmute',
-    showShortcuts: 'Show shortcuts',
-    keyboardShortcuts: 'Keyboard shortcuts',
-    toggleTheme: 'Toggle theme',
-    toggleSlideshow: 'Play / Pause slideshow'
+    carouselItemLabel: '項目 %1 / %2',
+    playPause: '再生 / 一時停止',
+    muteUnmute: 'ミュート / ミュート解除',
+    showShortcuts: 'ショートカットを表示',
+    keyboardShortcuts: 'キーボードショートカット',
+    toggleTheme: 'テーマを切り替え',
+    toggleSlideshow: 'スライドショー 再生 / 一時停止'
   };
 
   /**
@@ -621,38 +618,6 @@
           if (nativeMedia) {
             nativeMedia.muted = !nativeMedia.muted;
             self._showMediaStateFeedback(nativeMedia.muted ? 'mute' : 'unmute');
-          }
-          return;
-        }
-        if (e.key === 'r' && hasBuiltInMedia) {
-          e.preventDefault();
-          var PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
-          var $speed = self.$stage.find('.cv-jp-speed');
-          if ($speed.length) {
-            var current = parseFloat($speed.val()) || 1;
-            var idx = PLAYBACK_RATES.indexOf(current);
-            if (idx < 0) idx = PLAYBACK_RATES.indexOf(1);
-            if (idx < 0) idx = 2;
-            var nextIdx = (idx + 1) % PLAYBACK_RATES.length;
-            var next = PLAYBACK_RATES[nextIdx];
-            $speed.val(String(next)).trigger('change');
-            return;
-          }
-          var nativeMedia = self.$stage.find('.cv-native-video')[0] || self.$stage.find('.cv-audio-wrap audio')[0];
-          if (nativeMedia) {
-            var r = nativeMedia.playbackRate || 1;
-            var i = PLAYBACK_RATES.indexOf(r);
-            if (i < 0) { for (i = 0; i < PLAYBACK_RATES.length && PLAYBACK_RATES[i] < r; i++) {} i = Math.min(i, PLAYBACK_RATES.length - 1); }
-            var ni = (i + 1) % PLAYBACK_RATES.length;
-            nativeMedia.playbackRate = PLAYBACK_RATES[ni];
-          }
-          return;
-        }
-        if (e.key === 'q') {
-          var $hd = self.$stage.find('.cv-jp-hd:visible');
-          if ($hd.length) {
-            e.preventDefault();
-            $hd.first().trigger('click');
           }
           return;
         }
@@ -1709,10 +1674,6 @@
       if (hasBuiltInMedia) {
         list.push({ key: ' ', label: str(inst, 'playPause') });
         list.push({ key: 'm', label: str(inst, 'muteUnmute') });
-        list.push({ key: 'r', label: str(inst, 'cyclePlaybackSpeed') });
-      }
-      if (this.$stage.find('.cv-jp-hd').length) {
-        list.push({ key: 'q', label: str(inst, 'toggleHd') });
       }
       if (this.$toolbar.find('.cv-tb-download').length && this.$toolbar.find('.cv-tb-download').is(':visible')) {
         list.push({ key: 'd', label: str(inst, 'download') });
@@ -1953,17 +1914,11 @@
 
     var vTip = (inst && inst.opts.canShowTooltip !== false);
     var v = function(k) { return vTip ? (' data-cv-tooltip="' + escHtml(str(inst, k)) + '"') : ''; };
-    var videoOpts = (inst && inst.opts.video) || {};
-    var hdUrlFromItem = item.hdUrl && isSafeResourceUrl(item.hdUrl);
-    var hasHdCallback = videoOpts.onGetHdUrl && typeof videoOpts.onGetHdUrl === 'function';
-    var showHd = !!hdUrlFromItem || !!hasHdCallback;
-    var hdBtnHtml = showHd ? ('<button class="cv-jp-btn cv-jp-hd" type="button"' + v('hd') + '>HD</button>') : '';
     var $wrap = $(
       '<div class="cv-video-wrap">' +
         '<div id="' + id + '" class="cv-jp-player"></div>' +
         '<div id="' + containerId + '" class="cv-jp-video-ui">' +
           '<div class="cv-jp-video-screen"></div>' +
-          (showHd ? '<span class="cv-jp-hd-badge" aria-hidden="true">HD</span>' : '') +
           '<div class="cv-jp-big-play"><svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div>' +
           '<div class="cv-jp-controls">' +
             '<button class="cv-jp-btn jp-play" type="button"' + v('play') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></button>' +
@@ -1976,7 +1931,6 @@
               '<option value="1" selected>1x</option><option value="1.25">1.25x</option>' +
               '<option value="1.5">1.5x</option><option value="2">2x</option>' +
             '</select>' +
-            hdBtnHtml +
             '<button class="cv-jp-btn jp-mute" type="button"' + v('mute') + '><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>' +
             '<button class="cv-jp-btn jp-unmute" type="button"' + v('unmute') + ' style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></button>' +
             '<div class="cv-jp-volume jp-volume-bar"><div class="cv-jp-volume-val jp-volume-bar-value"></div></div>' +
@@ -1993,7 +1947,6 @@
       $wrap.find('.jp-play').attr('aria-label', str(inst, 'play'));
       $wrap.find('.jp-pause').attr('aria-label', str(inst, 'pause'));
       $wrap.find('.cv-jp-speed').attr('aria-label', str(inst, 'playbackSpeed'));
-      $wrap.find('.cv-jp-hd').attr('aria-label', str(inst, 'hd'));
       $wrap.find('.jp-mute').attr('aria-label', str(inst, 'mute'));
       $wrap.find('.jp-unmute').attr('aria-label', str(inst, 'unmute'));
       $wrap.find('.jp-full-screen').attr('aria-label', str(inst, 'fullscreen'));
@@ -2017,70 +1970,6 @@
     $speed.on('change', function() {
       $jp.jPlayer('option', 'playbackRate', parseFloat(this.value));
     });
-
-    var $hdBtn = $wrap.find('.cv-jp-hd');
-    var originalMedia = media;
-    var isHdCurrentlyPlaying = false;
-    if ($hdBtn.length) {
-      function setHdButtonActive(active) {
-        isHdCurrentlyPlaying = !!active;
-        $hdBtn.toggleClass('cv-jp-hd-active', isHdCurrentlyPlaying);
-        var label = str(inst, 'hd') + (isHdCurrentlyPlaying ? ' (on)' : '');
-        if (inst && inst.opts.canShowTooltip !== false) $hdBtn.attr('data-cv-tooltip', label);
-        if (inst && inst.opts.wcag) $hdBtn.attr('aria-label', label);
-        var $badge = $wrap.find('.cv-jp-hd-badge');
-        if ($badge.length) $badge.toggle(isHdCurrentlyPlaying);
-      }
-      function doHdToggle() {
-        var jpData = $jp.data('jPlayer');
-        var currentTime = (jpData && jpData.status && typeof jpData.status.currentTime === 'number') ? jpData.status.currentTime : 0;
-        var wasPlaying = isPlaying;
-        $jp.jPlayer('pause');
-        var didSeek = false;
-        var seekFallbackTimer;
-        function seekAndResume() {
-          if (didSeek) return;
-          didSeek = true;
-          clearTimeout(seekFallbackTimer);
-          $jp.jPlayer('pause', currentTime);
-          if (wasPlaying) $jp.jPlayer('play');
-        }
-        if (isHdCurrentlyPlaying) {
-          $jp.one('jPlayer_loadeddata', function() {
-            seekAndResume();
-            setHdButtonActive(false);
-          });
-          seekFallbackTimer = setTimeout(function() {
-            seekAndResume();
-            setHdButtonActive(false);
-          }, 1200);
-          $jp.jPlayer('setMedia', originalMedia);
-          return;
-        }
-        var hdUrl = (hdUrlFromItem ? item.hdUrl : null) || (hasHdCallback ? videoOpts.onGetHdUrl(item, inst) : null);
-        if (!hdUrl || !isSafeResourceUrl(hdUrl)) return;
-        var newMedia = {}; newMedia[supplied] = hdUrl;
-        if (originalMedia.poster) newMedia.poster = originalMedia.poster;
-        $jp.one('jPlayer_loadeddata', function() {
-          seekAndResume();
-          setHdButtonActive(true);
-        });
-        seekFallbackTimer = setTimeout(function() {
-          seekAndResume();
-          setHdButtonActive(true);
-        }, 1200);
-        $jp.jPlayer('setMedia', newMedia);
-      }
-      $hdBtn.on('click', function() {
-        if (isHdCurrentlyPlaying) {
-          doHdToggle();
-          return;
-        }
-        var hdUrl = (hdUrlFromItem ? item.hdUrl : null) || (hasHdCallback ? videoOpts.onGetHdUrl(item, inst) : null);
-        if (!hdUrl || !isSafeResourceUrl(hdUrl)) return;
-        doHdToggle();
-      });
-    }
 
     var $fullscreenBtn = $wrap.find('.jp-full-screen');
     var $restoreBtn = $wrap.find('.jp-restore-screen');

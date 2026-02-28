@@ -17,6 +17,7 @@ A jQuery plugin that opens attachments (images, video, audio, PDF, inline conten
 - [Item data](#item-data)
 - [Content types](#content-types)
 - [Toolbar](#toolbar)
+- [Keyboard shortcuts](#keyboard-shortcuts)
 - [Poll options](#poll-options)
 - [Callbacks](#callbacks)
 - [Public API](#public-api)
@@ -43,6 +44,7 @@ The example page uses jQuery 3.7, jPlayer, and PDF.js (loaded from CDN). For a m
 - **jQuery** (1.7+ or 2.x/3.x)
 - **Optional:** [jPlayer](https://jplayer.org/) for video/audio playback
 - **Optional:** [PDF.js](https://mozilla.github.io/pdf.js/) for PDF rendering
+- **Optional:** [marked](https://github.com/markedjs/marked) for full Markdown (CommonMark) preview; otherwise a minimal built-in parser is used
 
 Include the plugin and stylesheet after jQuery:
 
@@ -52,7 +54,7 @@ Include the plugin and stylesheet after jQuery:
 <script src="component-viewer.js"></script>
 ```
 
-For video/audio with jPlayer, include jPlayer before the plugin. For PDF with pdf.js, include the library and set `pdf.workerSrc`.
+For video/audio with jPlayer, include jPlayer before the plugin. For PDF with pdf.js, include the library and set `pdf.workerSrc`. For full Markdown support, include marked (e.g. from a CDN) before the plugin.
 
 ---
 
@@ -95,7 +97,8 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 | `selector` | string | `'.cv-item'` | CSS selector for items inside the container. |
 | `loop` | boolean | `true` | If `true`, prev from first goes to last and next from last goes to first. If `false`, prev/next are hidden at first/last. |
 | `overlayClose` | boolean | `true` | Close overlay when clicking the backdrop. |
-| `keyboardNav` | boolean | `true` | Escape closes; Left/Right move prev/next. |
+| `keyboardNav` | boolean | `true` | Escape closes; Left/Right move prev/next; Space/M/D and custom shortcuts when applicable. |
+| `shortcutsPopup` | boolean | `true` | If <code>true</code>, pressing <strong>?</strong> opens a popup listing keyboard shortcuts for the current view. Set to <code>false</code> to disable. |
 | `showCounter` | boolean | `true` | Show the "1 / 6" counter in the header. Set to `false` to hide it. |
 | `preloadAdjacentImages` | boolean | `true` | When `true`, the next and previous items are preloaded if they are images, so navigating to them is instant (Colorbox-style). Set to `false` to disable. |
 | `carousel` | object | `{ enabled: false, navThreshold: 4 }` | Carousel options. Set <code>carousel.enabled: true</code> to show a header button that toggles a strip of thumbnails below the stage. <code>carousel.navThreshold</code> (default 4): when item count exceeds this, prev/next buttons appear on the strip. |
@@ -132,8 +135,10 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 | `onRender` | function | `null` | `function(item, $stage, viewer)`. If it appends to `$stage`, built-in renderer is skipped. May return `{ toolbar, destroy }`. |
 | `onToolbar` | function | `null` | `function(item, defaultToolbar, viewer)`. Modify or replace the toolbar array. |
 | `onLoading` | function | `null` | `function(item, viewer)` before an item is loaded. |
-| `onOpen` | function | `null` | `function(item, $stage, viewer)` after the item is shown. |
-| `onClose` | function | `null` | `function(item, viewer)` when the overlay closes. |
+| `onOpen` | function | `null` | `function(item, $stage, viewer)` after the item is shown and toolbar is built. |
+| `onComplete` | function | `null` | `function(item, viewer)` right after content is displayed (after transition if any). Like Colorbox `onComplete`. |
+| `onCleanup` | function | `null` | `function(item, viewer)` at the start of the close process, before teardown. Like Colorbox `onCleanup`. |
+| `onClose` | function | `null` | `function(item, viewer)` when the overlay has closed (item was the visible one). Like Colorbox `onClosed`. |
 
 ### Accessibility
 
@@ -158,7 +163,7 @@ When `itemData` is not used, each item is built from the matched element:
 
 | Field | Source |
 |-------|--------|
-| `type` | `data-type` or `'image'` |
+| `type` | `data-type`, or `'markdown'` when file extension is `.md`, or `'image'` |
 | `src` | `data-src` or `href` or first `img[src]` |
 | `title` | `data-title` or `title` or `''` |
 | `downloadUrl` | `data-download` |
@@ -167,6 +172,7 @@ When `itemData` is not used, each item is built from the matched element:
 | `thumbnailUrl` | `data-thumbnail` or `data-poster` |
 | `message` | `data-message` |
 | `html` | `data-html` (for type `html`) |
+| `content` | `data-content` (for type `markdown` or `inline`) |
 | `pollOptionLabel` | `data-poll-option-label` |
 | `pollOptionId` | `data-poll-option-id` |
 | `supplied` | `data-supplied` (jPlayer format override) |
@@ -182,7 +188,7 @@ The plugin chooses a renderer by `item.type` (default `'image'`).
 ### Renderer order
 
 1. **onRender(item, $stage, viewer)** — If it appends to `$stage`, the built-in renderer is skipped. Can return `{ toolbar: [...], destroy: function() }`.
-2. **Built-in by type:** image, video, audio, pdf, inline, error, html.
+2. **Built-in by type:** image, video, audio, pdf, inline, markdown, error, html.
 3. **Unsupported** — If the stage is still empty, a "no preview" card is shown.
 
 ### Built-in types
@@ -194,6 +200,7 @@ The plugin chooses a renderer by `item.type` (default `'image'`).
 | **audio** | jPlayer (or native `<audio>`). |
 | **pdf** | PDF.js with page nav, thumbnails, zoom, rotate, print. Falls back to iframe if PDF.js not loaded. |
 | **inline** | Source/code view with line numbers. Content from `item.content` or fetched from `item.src`. |
+| **markdown** | Markdown rendered as HTML. Content from `item.content` or fetched from `item.src`. Include [marked](https://github.com/markedjs/marked) (e.g. from CDN) for full CommonMark support; otherwise a minimal built-in parser is used. Files with `.md` extension default to this type. |
 | **error** | "Cannot preview" card with optional message and Download. |
 | **html** | User-provided HTML in the stage. No toolbar, no download. |
 | **Other** | Unsupported card with file icon, name, and optional Download. |
@@ -251,6 +258,7 @@ When an entry is an object, the following properties are supported:
 | `tooltip` | string | — | Button <code>title</code> and, when <code>wcag</code> is true, <code>aria-label</code>. Falls back to <code>label</code> or <code>id</code>. |
 | `showLabel` | boolean | `false` | If <code>true</code>, the label is shown as text beside the icon. |
 | `className` | string | — | Extra CSS class(es) on the button. |
+| `shortcutKey` | string | — | Optional. Single-character keyboard shortcut (e.g. <code>'e'</code>) to trigger this button. Shown in the shortcuts popup (?) when the item is visible. Reserved keys: Escape, Arrow keys, Space, M, R, Q, D, P, ?, +, -, =. |
 | `visible` | boolean or function | `true` | If <code>false</code> or a function that returns <code>false</code>, the button is not rendered. Function: <code>visible(item, viewer)</code>. |
 | `onClick` | function | — | <code>function(item, viewer)</code> — called when the button is clicked. |
 
@@ -263,6 +271,33 @@ toolbarItems: [
   { id: 'delete', label: 'Delete', visible: function(item) { return item.canDelete; }, onClick: fn }
 ]
 ```
+
+---
+
+## Keyboard shortcuts
+
+When `keyboardNav` is true, the following shortcuts are available. Press **?** (Shift+/) to open a popup that lists only the shortcuts **enabled for the current item** (by type and toolbar options).
+
+| Key | Action |
+|-----|--------|
+| **Escape** | Close overlay (or close shortcuts popup if open). |
+| **←** / **→** | Previous / next item. |
+| **+** / **-** | Zoom in / out (image only, when zoom is enabled). |
+| **Space** | Play / Pause (video or audio **only when rendered by the plugin**; not for custom-rendered or slideshow). |
+| **M** | Mute / Unmute (video or audio only when plugin-rendered). |
+| **R** | Cycle playback speed (video or audio only when plugin-rendered; cycles 0.5x → 0.75x → 1x → 1.25x → 1.5x → 2x). |
+| **Q** | Toggle HD quality (video only when HD source is available). |
+| **D** | Download (when the download button is visible). |
+| **P** | Print (PDF view only; when the PDF print button is visible). |
+| **F** | Toggle fullscreen (when the fullscreen button is visible). |
+| **T** | Toggle theme dark/light (when the theme toggle is visible). |
+| **C** | Toggle carousel / attachments strip (when carousel is enabled). |
+| **S** | Play / Pause slideshow (when slideshow is enabled and the slideshow button is visible). |
+| **?** | Show or hide the keyboard shortcuts popup. |
+
+**Custom toolbar shortcuts:** Add `shortcutKey: 'e'` (or any single character) to a toolbar item to give it a keyboard shortcut. That shortcut appears in the popup only when the button is visible. Reserved keys (Escape, arrows, Space, M, R, Q, D, P, F, T, C, S, ?, +, -, =) are not available for custom items.
+
+Set `shortcutsPopup: false` to disable the ? popup.
 
 ---
 
@@ -283,7 +318,9 @@ Useful for polls where each option is an image or attachment.
 |----------|------|
 | `onLoading(item, viewer)` | Before the item is loaded. |
 | `onOpen(item, $stage, viewer)` | After the item is shown and toolbar is built. |
-| `onClose(item, viewer)` | When the overlay closes (item was the visible one). |
+| `onComplete(item, viewer)` | Right after content is displayed (after transition if any). |
+| `onCleanup(item, viewer)` | At the start of the close process, before teardown. |
+| `onClose(item, viewer)` | When the overlay has closed (item was the visible one). |
 | `onThemeChange(theme, viewer)` | When the user toggles theme. |
 | `onDownload(item, viewer)` | When the Download button is clicked (if provided). |
 | `onRender(item, $stage, viewer)` | First chance to render; if you append to `$stage`, built-in is skipped. |

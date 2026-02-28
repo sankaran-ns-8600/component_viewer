@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ComponentViewer – Example</title>
+  <title>ComponentViewer – Example (Japanese / 日本語 – I18N)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="component-viewer.css" />
   <style>
@@ -37,9 +37,9 @@
 <body>
 
 <div class="page-title">
-  <h1>ComponentViewer</h1>
-  <p>Built-in image (zoom/pan), video (jPlayer), audio (jPlayer), PDF (pdf.js). Customer can override any via onRender or modify toolbar via onToolbar.</p>
-  <p style="font-size: 13px; margin-top: 8px;"><a href="example-japanese.html">example-japanese.html</a> — Same demo with <strong>Japanese (日本語) UI</strong> (I18N). <a href="example-jquery1.7.html">example-jquery1.7.html</a> — jQuery 1.7.1. <a href="example-pdf-2.2.html">example-pdf-2.2.html</a> — PDF.js 2.2. <a href="example-jplayer-2.5.html">example-jplayer-2.5.html</a> — jPlayer 2.5.</p>
+  <h1>ComponentViewer (日本語)</h1>
+  <p>I18N demo: this page uses <code>component-viewer-japanese.js</code> so all plugin UI strings (tooltips, buttons, labels) are in Japanese. Same behaviour as <a href="example.html">example.html</a>.</p>
+  <p style="font-size: 13px; margin-top: 8px;"><a href="example.html">example.html</a> — English. <a href="example-jquery1.7.html">example-jquery1.7.html</a> — jQuery 1.7.1. <a href="example-pdf-2.2.html">example-pdf-2.2.html</a> — PDF.js 2.2. <a href="example-jplayer-2.5.html">example-jplayer-2.5.html</a> — jPlayer 2.5.</p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
@@ -479,40 +479,6 @@ $(<span class="str">'#post-video-thumb'</span>).<span class="fn">componentViewer
          data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4">
       <i class="fa-solid fa-film"></i><span class="att-label">No thumbnail</span>
     </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════
-     CASE 8b: Video with HD quality switch
-     ═══════════════════════════════════════════════════════════════════ -->
-
-<div class="section-title">Case 8b — Video with HD quality</div>
-<p class="section-desc">
-  When a video item has an HD/high-quality URL (via <code>item.hdUrl</code> in <code>itemData</code> or <code>video.onGetHdUrl</code> callback), an <strong>HD</strong> button appears in the player. Clicking it switches playback to the HD source from the current timestamp so playback continues smoothly without restarting.
-</p>
-
-<pre>
-<span class="cm">// Option 1: Set item.hdUrl in itemData (e.g. from data-hd-url attribute)</span>
-<span class="cm">// Option 2: video.onGetHdUrl(item, viewer) returns the HD URL</span>
-$(<span class="str">'#post-video-hd'</span>).<span class="fn">componentViewer</span>({
-  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span> },
-  <span class="kw">itemData</span>: <span class="kw">function</span>($el, defaultItem) {
-    <span class="kw">if</span> (defaultItem.type === <span class="str">'video'</span> &amp;&amp; $el.data(<span class="str">'hd-url'</span>))
-      defaultItem.hdUrl = $el.data(<span class="str">'hd-url'</span>);
-    <span class="kw">return</span> defaultItem;
-  }
-  <span class="cm">// Or: video: { onGetHdUrl: function(item, viewer) { return item.attachmentId ? getHdUrl(item.attachmentId) : null; } }</span>
-});
-</pre>
-
-<div class="post" id="post-video-hd">
-  <div class="post-header">
-    <div class="post-avatar"><i class="fa-solid fa-film"></i></div>
-    <div><div class="post-author">Video with HD option</div><div class="post-time">Case 8b</div></div>
-  </div>
-  <div class="post-body">Play the video, then click <strong>HD</strong> in the controls to switch to the high-quality source from the current position.</div>
-  <div class="post-attachments">
-    <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4" data-hd-url="https://www.w3schools.com/html/mov_bbb.mp4"><i class="fa-solid fa-film"></i><span class="att-label">Demo (HD available)</span></div>
   </div>
 </div>
 
@@ -1211,7 +1177,6 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-pdf-autofit').componentViewer('open', 0)">Case7: PDF autoFit</button>
   <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 0)">Case8: Video + thumb</button>
   <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 1)">Case8: Video no thumb</button>
-  <button class="api-btn" onclick="$('#post-video-hd').componentViewer('open', 0)">Case8b: Video HD</button>
   <button class="api-btn" onclick="window.open('example-no-libs.html','_blank')">Case9: Open no-libs example</button>
   <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 0)">Case10: Inline JS</button>
   <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 1)">Case10: Inline Java</button>
@@ -1396,7 +1361,7 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jplayer/2.9.2/jplayer/jquery.jplayer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="component-viewer.js"></script>
+<script src="component-viewer-japanese.js"></script>
 
 <script>
 (function() {
@@ -1649,19 +1614,6 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
   $('#post-video-thumb').componentViewer({
     toolbar: { download: true, zoom: true },
     onOpen: function(item) { log('Case8 onOpen [' + item.type + '] ' + item.title + (item.thumbnailUrl ? ' (with poster)' : '')); }
-  });
-
-  /* ═══════════════════════════════════════════════════════════════
-     CASE 8b: Video with HD quality
-     ═══════════════════════════════════════════════════════════════ */
-
-  $('#post-video-hd').componentViewer({
-    toolbar: { download: true },
-    itemData: function($el, defaultItem) {
-      if (defaultItem.type === 'video' && $el.data('hd-url')) defaultItem.hdUrl = $el.data('hd-url');
-      return defaultItem;
-    },
-    onOpen: function(item) { log('Case8b onOpen [video HD] ' + item.title); }
   });
 
   /* ═══════════════════════════════════════════════════════════════

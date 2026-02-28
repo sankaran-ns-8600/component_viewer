@@ -96,7 +96,9 @@
       <h2>Data &amp; Rendering</h2>
       <a href="#item-data">Item data</a>
       <a href="#content-types">Content types</a>
+      <a href="#markdown" class="nav-sub">Markdown</a>
       <a href="#toolbar">Toolbar</a>
+      <a href="#keyboard-shortcuts" class="nav-sub">Keyboard shortcuts</a>
 
       <h2>API &amp; Integration</h2>
       <a href="#callbacks">Callbacks (lifecycle)</a>
@@ -105,6 +107,7 @@
       <a href="#responsiveness-gestures">Responsiveness &amp; gestures</a>
       <a href="#security">Security</a>
       <a href="#browser-support">Browser support</a>
+      <a href="#comparison-colorbox" class="nav-sub">Comparison with Colorbox, Lightbox, and LC Lightbox</a>
       <a href="#examples">Examples</a>
     </nav>
     <main>
@@ -215,7 +218,8 @@
             <tr><td><code>loop</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, prev from first goes to last and next from last goes to first. If <code>false</code>, prev/next buttons are hidden on the first and last item respectively.</td></tr>
             <tr><td><code>overlayClose</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, clicking the overlay backdrop closes the viewer.</td></tr>
             <tr><td><code>swipeToClose</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, a downward touch swipe on the stage (e.g. on mobile) closes the overlay. Only has effect when <code>overlayClose</code> is true. Does not affect desktop.</td></tr>
-            <tr><td><code>keyboardNav</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, Escape closes the overlay and Left/Right arrow keys move to prev/next item.</td></tr>
+            <tr><td><code>keyboardNav</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, Escape closes the overlay; Left/Right move prev/next; Space/M/D and custom toolbar shortcuts apply when applicable. See <a href="#keyboard-shortcuts">Keyboard shortcuts</a>.</td></tr>
+            <tr><td><code>shortcutsPopup</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, pressing <strong>?</strong> (Shift+/) opens a popup that lists keyboard shortcuts for the current view. Set to <code>false</code> to disable.</td></tr>
             <tr><td><code>swipeNav</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, horizontal touch swipe on the stage (e.g. on mobile) moves to prev/next item. On images at zoom 1, swipe is used for navigation; when zoomed in, single-finger touch remains pan. On desktop, use prev/next buttons or arrow keys. Does not affect keyboard or button navigation.</td></tr>
             <tr><td><code>canShowTooltip</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, a custom tooltip is shown on hover for header/footer/toolbar buttons (close, fullscreen, theme, carousel, nav, zoom, download, PDF/video/audio controls). Tooltips use a hover-based mechanism (not the <code>title</code> attribute): they appear on mouseenter and hide on mouseleave. For custom toolbar items, if <code>label</code> is set it is used as the tooltip; if not, no tooltip is shown for that item. Set to <code>false</code> to disable all tooltips.</td></tr>
             <tr><td><code>showCounter</code></td><td>boolean</td><td><code>true</code></td><td>If <code>true</code>, the header shows the counter (e.g. "1 / 6"). Set to <code>false</code> to hide it.</td></tr>
@@ -230,6 +234,7 @@
             <tr><td><code>zoom</code></td><td>object</td><td><code>{ min: 1, max: 5, step: 0.01, wheelStep: 0.15, showPercentage: false, onZoom: null }</code></td><td>Image zoom limits and behavior. <code>min</code>/<code>max</code>/<code>step</code> for the slider; <code>wheelStep</code> for mouse wheel; <code>showPercentage</code> to show e.g. &quot;150%&quot;; <code>onZoom(zoomLevel, item, viewer)</code> callback. See <a href="#toolbar">Toolbar</a>.</td></tr>
             <tr><td><code>toolbarItems</code></td><td>array</td><td><code>[]</code></td><td>Custom toolbar entries (objects with <code>id</code>, <code>icon</code>, <code>label</code>, <code>onClick</code>, etc., or <code>'separator'</code>, or DOM nodes). Merged with the renderer toolbar. See <a href="#toolbar">Toolbar</a>.</td></tr>
             <tr><td><code>pdf</code></td><td>object</td><td><code>{ workerSrc: null, cMapUrl: null, cMapPacked: true, annotations: true, autoFit: true, autoFitMaxScale: 2.5 }</code></td><td>PDF.js and rendering. <code>workerSrc</code> is required for PDF.js. See <a href="#options-pdf">PDF options</a>.</td></tr>
+            <tr><td><code>video</code></td><td>object</td><td><code>{ onGetHdUrl: null }</code></td><td>Video options. <code>onGetHdUrl(item, viewer)</code> — callback that returns the URL for HD/high-quality playback, or <code>null</code>. When an HD URL is available (from this callback or <code>item.hdUrl</code>), an <strong>HD</strong> button is shown; clicking it switches playback to that URL from the current timestamp. See <a href="#options-video-hd">Video HD quality</a>.</td></tr>
             <tr><td><code>supportedVideoFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated jPlayer video format names (e.g. <code>'m4v, webmv'</code>). If <code>null</code>, derived from file extension. See <a href="#options-media">Media (jPlayer)</a>.</td></tr>
             <tr><td><code>supportedAudioFormats</code></td><td>string</td><td><code>null</code></td><td>Comma-separated jPlayer audio format names (e.g. <code>'mp3, oga'</code>). If <code>null</code>, derived from file extension. See <a href="#options-media">Media (jPlayer)</a>.</td></tr>
             <tr><td><code>itemData</code></td><td>function</td><td><code>null</code></td><td><code>function($el, defaultItem)</code> — returns the item object for the given element. See <a href="#options-callbacks">Data and callbacks</a>.</td></tr>
@@ -262,6 +267,15 @@
         </table>
         <p>Per-item override: set <code>item.supplied</code> (e.g. via <code>itemData</code> or <code>data-supplied</code>) to override the format for a single item.</p>
 
+        <h3 id="options-video-hd">Video HD quality</h3>
+        <p>When a video item has an HD or high-quality source URL, you can show an <strong>HD</strong> button in the player. The user clicks it to switch playback to that source from the current timestamp, so playback continues smoothly without restarting.</p>
+        <p><strong>Provide the HD URL in either way:</strong></p>
+        <ul>
+          <li><strong><code>item.hdUrl</code></strong> — Set via <code>itemData</code> (e.g. from a <code>data-hd-url</code> attribute). If set and valid, the HD button is shown.</li>
+          <li><strong><code>video.onGetHdUrl(item, viewer)</code></strong> — Callback that returns the HD URL for the given item, or <code>null</code>. Called when the user clicks HD; if it returns a valid URL, playback switches to that URL from the current position.</li>
+        </ul>
+        <p>When the user clicks HD, the plugin pauses playback, gets the current time, loads the new source via jPlayer <code>setMedia</code>, then seeks to the saved time and resumes if the video was playing. The HD button is <strong>highlighted</strong> when HD content is playing; clicking it again (or pressing <kbd>Q</kbd>) switches back to the original quality. See <a href="example.html">example.html</a> Case 8b for a working demo.</p>
+
         <h3 id="options-callbacks">Data and callbacks</h3>
         <table>
           <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
@@ -272,7 +286,9 @@
             <tr><td><code>onToolbar</code></td><td>function</td><td><code>null</code></td><td><code>function(item, defaultToolbar, viewer)</code> — receives the resolved toolbar array; can modify or replace it. Not used when <code>onRender</code> returns a toolbar.</td></tr>
             <tr><td><code>onLoading</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called just before an item is loaded.</td></tr>
             <tr><td><code>onOpen</code></td><td>function</td><td><code>null</code></td><td><code>function(item, $stage, viewer)</code> — called after the item is shown and the toolbar is built.</td></tr>
-            <tr><td><code>onClose</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called when the overlay closes; <code>item</code> is the one that was visible.</td></tr>
+            <tr><td><code>onComplete</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called right after the content is displayed (after transition if any). Similar to Colorbox <code>onComplete</code>.</td></tr>
+            <tr><td><code>onCleanup</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called at the start of the close process, before teardown. Similar to Colorbox <code>onCleanup</code>.</td></tr>
+            <tr><td><code>onClose</code></td><td>function</td><td><code>null</code></td><td><code>function(item, viewer)</code> — called when the overlay has closed; <code>item</code> is the one that was visible. Similar to Colorbox <code>onClosed</code>.</td></tr>
             <tr><td><code>onThemeChange</code></td><td>function</td><td><code>null</code></td><td><code>function(theme, viewer)</code> — called when the user changes the theme via the header toggle (<code>theme</code> is <code>'dark'</code> or <code>'light'</code>).</td></tr>
           </tbody>
         </table>
@@ -404,15 +420,17 @@
         <table>
           <thead><tr><th>Field</th><th>Source</th></tr></thead>
           <tbody>
-            <tr><td><code>type</code></td><td><code>data-type</code> or <code>'image'</code></td></tr>
+            <tr><td><code>type</code></td><td><code>data-type</code>, or <code>'markdown'</code> when file extension is <code>.md</code>, or <code>'image'</code></td></tr>
             <tr><td><code>src</code></td><td><code>data-src</code> or <code>href</code> or first <code>img[src]</code></td></tr>
             <tr><td><code>title</code></td><td><code>data-title</code> or <code>title</code> or <code>''</code></td></tr>
             <tr><td><code>downloadUrl</code></td><td><code>data-download</code></td></tr>
             <tr><td><code>fileExt</code></td><td><code>data-ext</code></td></tr>
             <tr><td><code>fileSize</code></td><td><code>data-size</code></td></tr>
             <tr><td><code>thumbnailUrl</code></td><td><code>data-thumbnail</code> or <code>data-poster</code></td></tr>
+            <tr><td><code>hdUrl</code></td><td>Set via <code>itemData</code> (e.g. from <code>data-hd-url</code>). For video: when set to a valid URL, an <strong>HD</strong> button is shown; clicking it switches playback to this URL from the current timestamp. See <a href="#options-video-hd">Video HD quality</a>.</td></tr>
             <tr><td><code>message</code></td><td><code>data-message</code></td></tr>
             <tr><td><code>html</code></td><td><code>data-html</code> (for type <code>html</code>)</td></tr>
+            <tr><td><code>content</code></td><td>Inline content (for type <code>markdown</code> or <code>inline</code>)</td></tr>
             <tr><td><code>pollOptionLabel</code></td><td><code>data-poll-option-label</code></td></tr>
             <tr><td><code>pollOptionId</code></td><td><code>data-poll-option-id</code></td></tr>
             <tr><td><code>supplied</code></td><td><code>data-supplied</code> (jPlayer format override)</td></tr>
@@ -439,11 +457,34 @@
             <tr><td><code>audio</code></td><td>jPlayer (or native <code>&lt;audio&gt;</code>).</td></tr>
             <tr><td><code>pdf</code></td><td>PDF.js with page navigation, thumbnails, zoom, rotate, print (or iframe fallback).</td></tr>
             <tr><td><code>inline</code></td><td>Source/code view with line numbers. Content from <code>item.content</code> or fetched from <code>item.src</code>.</td></tr>
+            <tr><td><code>markdown</code></td><td>Markdown rendered as HTML. See <a href="#markdown">Markdown</a>.</td></tr>
             <tr><td><code>error</code></td><td>"Cannot preview" card with optional custom message and Download button when <code>src</code> or <code>downloadUrl</code> is set.</td></tr>
             <tr><td><code>html</code></td><td>User-provided HTML in the stage. No toolbar, no download; header title/counter can be hidden if <code>title</code> is empty.</td></tr>
             <tr><td>Other</td><td>Unsupported card with file icon, name, optional extension/size, and Download when a URL is available.</td></tr>
           </tbody>
         </table>
+        <hr class="section-end" />
+      </section>
+
+      <section id="markdown" class="section">
+        <h2>Markdown</h2>
+        <p>The <code>markdown</code> type renders Markdown as HTML in the overlay. Use it for <code>.md</code> files or inline markdown content.</p>
+        <h3>Item data</h3>
+        <p>Content can come from:</p>
+        <ul>
+          <li><strong><code>item.content</code></strong> — Inline markdown string (e.g. from <code>data-content</code>).</li>
+          <li><strong><code>item.src</code></strong> — URL or path to a <code>.md</code> file; the plugin fetches it and renders the response. Relative URLs (e.g. <code>sample.md</code>) are resolved against the current document. Files with <code>.md</code> extension default to type <code>markdown</code> when <code>data-type</code> is not set.</li>
+        </ul>
+        <h3>Parser</h3>
+        <p>Include the open-source <a href="https://github.com/markedjs/marked">marked</a> library for full CommonMark support:</p>
+        <pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"&gt;&lt;/script&gt;</code></pre>
+        <p>If <code>window.marked</code> is not present, the plugin uses a minimal built-in parser (headings, bold, italic, code, links, line breaks).</p>
+        <h3>Example</h3>
+        <pre><code>&lt;!-- Inline content --&gt;
+&lt;div class="cv-item" data-type="markdown" data-title="Note.md" data-content="# Hello\n**Bold** and *italic*."&gt;Note&lt;/div&gt;
+
+&lt;!-- Load from URL --&gt;
+&lt;div class="cv-item" data-type="markdown" data-title="README.md" data-src="https://example.com/README.md"&gt;README&lt;/div&gt;</code></pre>
         <hr class="section-end" />
       </section>
 
@@ -505,6 +546,7 @@
             <tr><td><code>tooltip</code></td><td>string</td><td>—</td><td>Button <code>title</code> and, when <code>wcag</code> is true, <code>aria-label</code>. Falls back to <code>label</code> or <code>id</code>.</td></tr>
             <tr><td><code>showLabel</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, the label is shown as text beside the icon.</td></tr>
             <tr><td><code>className</code></td><td>string</td><td>—</td><td>Extra CSS class(es) on the button.</td></tr>
+            <tr><td><code>shortcutKey</code></td><td>string</td><td>—</td><td>Optional. Single-character keyboard shortcut (e.g. <code>'e'</code>) to trigger this button. The shortcut is shown in the shortcuts popup (?) only when the button is visible. Reserved keys: Escape, Arrow keys, Space, M, R, Q, D, P, ?, +, -, =.</td></tr>
             <tr><td><code>visible</code></td><td>boolean or function</td><td><code>true</code></td><td>If <code>false</code> or a function that returns <code>false</code>, the button is not rendered. Function: <code>visible(item, viewer)</code>.</td></tr>
             <tr><td><code>onClick</code></td><td>function</td><td>—</td><td><code>function(item, viewer)</code> — called when the button is clicked.</td></tr>
           </tbody>
@@ -513,14 +555,42 @@
         <pre><code class="language-javascript">toolbarItems: [
   { id: 'share', icon: 'fa fa-share', label: 'Share', onClick: function(item) { /* ... */ } },
   'separator',
-  { id: 'delete', label: 'Delete', visible: function(item) { return item.canDelete; }, onClick: fn }
+  { id: 'extract', label: 'Extract Text', shortcutKey: 'e', onClick: function(item) { /* ... */ } }
 ]</code></pre>
+        <hr class="section-end" />
+      </section>
+
+      <section id="keyboard-shortcuts" class="section">
+        <h2>Keyboard shortcuts</h2>
+        <p>When <code>keyboardNav</code> is true, the following shortcuts are available. Press <strong>?</strong> (Shift+/) to open a popup that lists only the shortcuts <strong>enabled for the current item</strong> (by type and toolbar options).</p>
+        <table>
+          <thead><tr><th>Key</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Esc</kbd></td><td>Close overlay (or close shortcuts popup if it is open).</td></tr>
+            <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Previous / next item.</td></tr>
+            <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Zoom in / out (image only, when zoom is enabled).</td></tr>
+            <tr><td><kbd>Space</kbd></td><td>Play / Pause (video or audio <strong>only when rendered by the plugin</strong>; not for custom-rendered content or slideshow).</td></tr>
+            <tr><td><kbd>M</kbd></td><td>Mute / Unmute (video or audio only when plugin-rendered).</td></tr>
+            <tr><td><kbd>R</kbd></td><td>Cycle playback speed (video or audio only when plugin-rendered; cycles 0.5x → 0.75x → 1x → 1.25x → 1.5x → 2x).</td></tr>
+            <tr><td><kbd>Q</kbd></td><td>Toggle HD quality (video only when an HD source is available; switches to HD or back to original quality from the current timestamp).</td></tr>
+            <tr><td><kbd>D</kbd></td><td>Download (when the download button is visible).</td></tr>
+            <tr><td><kbd>P</kbd></td><td>Print (PDF view only; when the PDF print button is visible).</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Toggle fullscreen (when the fullscreen button is visible).</td></tr>
+            <tr><td><kbd>T</kbd></td><td>Toggle theme dark/light (when the theme toggle is visible).</td></tr>
+            <tr><td><kbd>C</kbd></td><td>Toggle carousel / attachments strip (when carousel is enabled).</td></tr>
+            <tr><td><kbd>S</kbd></td><td>Play / Pause slideshow (when slideshow is enabled and the slideshow button is visible).</td></tr>
+            <tr><td><kbd>?</kbd></td><td>Show or hide the keyboard shortcuts popup.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Custom toolbar shortcuts:</strong> Add <code>shortcutKey: 'e'</code> (or any single character) to a toolbar item to give it a keyboard shortcut. That shortcut appears in the popup only when the button is visible. Reserved keys (Escape, arrows, Space, M, R, Q, D, P, F, T, C, S, ?, +, -, =) are not available for custom items.</p>
+        <p>Set <code>shortcutsPopup: false</code> to disable the ? popup.</p>
         <hr class="section-end" />
       </section>
 
       <section id="i18n" class="section">
         <h2>I18N (Internationalization)</h2>
         <p>All user-facing text in the overlay (button labels, tooltips, error messages, and type labels) comes from a single <strong>default string registry</strong> defined inside the plugin. The plugin never uses hardcoded strings; it looks up every label by key from this registry. This lets you localize the UI by replacing the registry with your own translations.</p>
+        <p>For a full working example with Japanese (日本語) UI, see <a href="example-japanese.html">example-japanese.html</a>. That page loads <code>component-viewer-japanese.js</code> (same plugin with Japanese <code>defaultStrings</code>) so all overlay labels appear in Japanese.</p>
 
         <h3>Default strings</h3>
         <p>The plugin exposes this registry as <code>$.fn.componentViewer.defaultStrings</code>. By default it is the built-in English object used internally. You can:</p>
@@ -632,13 +702,31 @@ $('#post').componentViewer({});</code></pre>
           <tbody>
             <tr><td><code>onLoading(item, viewer)</code></td><td>Just before the item is loaded.</td></tr>
             <tr><td><code>onOpen(item, $stage, viewer)</code></td><td>After the item is shown and the toolbar is built.</td></tr>
-            <tr><td><code>onClose(item, viewer)</code></td><td>When the overlay closes; <code>item</code> was the visible one.</td></tr>
+            <tr><td><code>onComplete(item, viewer)</code></td><td>Right after the content is displayed (after transition if any).</td></tr>
+            <tr><td><code>onCleanup(item, viewer)</code></td><td>At the start of the close process, before teardown.</td></tr>
+            <tr><td><code>onClose(item, viewer)</code></td><td>When the overlay has closed; <code>item</code> was the visible one.</td></tr>
             <tr><td><code>onThemeChange(theme, viewer)</code></td><td>When the user toggles theme.</td></tr>
             <tr><td><code>onDownload(item, viewer)</code></td><td>When the user clicks the Download button (if provided).</td></tr>
             <tr><td><code>onRender(item, $stage, viewer)</code></td><td>First chance to render; appending to <code>$stage</code> skips the built-in renderer.</td></tr>
             <tr><td><code>onToolbar(item, defaultToolbar, viewer)</code></td><td>To modify the toolbar before it is rendered.</td></tr>
           </tbody>
         </table>
+
+        <h3>Execution order</h3>
+        <p>When <strong>opening or loading an item</strong>, lifecycle callbacks run in this order:</p>
+        <ol>
+          <li><code>onLoading(item, viewer)</code> — before the stage is cleared and content is rendered</li>
+          <li>Content is rendered (built-in or <code>onRender</code>), toolbar resolved (<code>onToolbar</code> if present)</li>
+          <li><code>onOpen(item, $stage, viewer)</code> — after the item is in the stage and toolbar is built</li>
+          <li><code>onComplete(item, viewer)</code> — right after content is displayed; if a transition is used (e.g. next/prev with transition), this runs after the transition ends (~320ms)</li>
+        </ol>
+        <p>When <strong>closing the overlay</strong>:</p>
+        <ol>
+          <li><code>onCleanup(item, viewer)</code> — at the start of the close process, before the close animation and teardown</li>
+          <li>Close animation and teardown (~300ms)</li>
+          <li><code>onClose(item, viewer)</code> — after the overlay is closed and the instance is cleared</li>
+        </ol>
+        <p><code>onThemeChange</code>, <code>onDownload</code>, <code>onRender</code>, and <code>onToolbar</code> run when their respective actions occur and are not part of the open/close sequence above.</p>
         <hr class="section-end" />
       </section>
 
@@ -745,6 +833,38 @@ $('#post').componentViewer({});</code></pre>
         <hr class="section-end" />
       </section>
 
+      <section id="comparison-colorbox" class="section">
+        <h2>Comparison with Colorbox, Lightbox, and LC Lightbox</h2>
+        <p><a href="https://github.com/jackmoore/colorbox" target="_blank" rel="noopener">Colorbox</a> is a popular jQuery lightbox for images and galleries. <a href="https://lokeshdhakar.com/projects/lightbox2/" target="_blank" rel="noopener">Lightbox</a> (e.g. Lightbox2) is a classic image lightbox, often vanilla JS. <a href="https://www.jqueryscript.net/demo/Gallery-Popup-With-jQuery-LC-Lightbox/" target="_blank" rel="noopener">LC Lightbox</a> is a jQuery gallery popup plugin. Below is a side-by-side comparison to help you choose.</p>
+
+        <h3>Side-by-side comparison</h3>
+        <table>
+          <thead><tr><th>Feature</th><th>Colorbox</th><th>Lightbox</th><th>LC Lightbox</th><th>ComponentViewer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>jQuery</strong></td><td>Yes</td><td>Optional / no</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td><strong>Images</strong></td><td>Yes, gallery + slideshow</td><td>Yes, gallery</td><td>Yes, gallery</td><td>Yes, gallery + zoom/pan + slideshow</td></tr>
+            <tr><td><strong>Image zoom/pan</strong></td><td>No (scale to fit)</td><td>No (scale to fit)</td><td>No (scale to fit)</td><td>Yes (slider, wheel, pinch, pan)</td></tr>
+            <tr><td><strong>Video</strong></td><td>Via iframe/embed only</td><td>Via iframe or not built-in</td><td>Via iframe or not built-in</td><td>Built-in (jPlayer + native <code>&lt;video&gt;</code>)</td></tr>
+            <tr><td><strong>Audio</strong></td><td>Via iframe/embed only</td><td>Via iframe or not built-in</td><td>Via iframe or not built-in</td><td>Built-in (jPlayer + native <code>&lt;audio&gt;</code>)</td></tr>
+            <tr><td><strong>PDF</strong></td><td>Via iframe only</td><td>Via iframe or not built-in</td><td>Via iframe or not built-in</td><td>Built-in (pdf.js: pages, zoom, thumbnails, annotations)</td></tr>
+            <tr><td><strong>Other types</strong></td><td>Inline, iframe, AJAX (generic)</td><td>Images mainly</td><td>Images / gallery focused</td><td>Inline (code), Markdown, HTML, error/unsupported</td></tr>
+            <tr><td><strong>Toolbar</strong></td><td>Minimal (close, arrows/slideshow)</td><td>Minimal (close, arrows, counter)</td><td>Minimal (close, arrows, counter)</td><td>Full: download, zoom, theme, fullscreen, carousel, custom <code>toolbarItems</code></td></tr>
+            <tr><td><strong>Custom toolbar</strong></td><td>No</td><td>No</td><td>No</td><td>Yes (custom buttons + <code>shortcutKey</code>)</td></tr>
+            <tr><td><strong>Keyboard</strong></td><td>Esc, arrows (if gallery)</td><td>Esc, arrows</td><td>Esc, arrows</td><td>Esc, arrows, Space/M/D/F/T/C/S, ?, zoom +/-, custom shortcuts</td></tr>
+            <tr><td><strong>Shortcuts popup</strong></td><td>No</td><td>No</td><td>No</td><td>Yes (context-aware list)</td></tr>
+            <tr><td><strong>Slideshow</strong></td><td>Yes (interval, start/stop)</td><td>No / manual</td><td>No / manual</td><td>Yes (interval, autoStart, progress, pause when popup open)</td></tr>
+            <tr><td><strong>Theme</strong></td><td>One skin (customize via CSS)</td><td>One skin (customize via CSS)</td><td>One skin (customize via CSS)</td><td>Dark/light toggle, theme-aware UI</td></tr>
+            <tr><td><strong>Fullscreen</strong></td><td>No</td><td>No</td><td>No</td><td>Yes (overlay fullscreen)</td></tr>
+            <tr><td><strong>Carousel / thumbnails</strong></td><td>No</td><td>No</td><td>Thumbnails in gallery</td><td>Yes (strip + toggle)</td></tr>
+            <tr><td><strong>Accessibility</strong></td><td>Basic (focus, Esc)</td><td>Basic (focus, Esc)</td><td>Basic (focus, Esc)</td><td>WCAG: focus trap, ARIA, shortcuts popup</td></tr>
+            <tr><td><strong>Callbacks</strong></td><td>onOpen, onLoad, onComplete, onCleanup, onClosed</td><td>Few (e.g. afterChange)</td><td>Few</td><td>onOpen, onClose, onLoading, onRender, onToolbar, onDownload, onThemeChange, etc.</td></tr>
+            <tr><td><strong>Custom rendering</strong></td><td>Limited (content injection)</td><td>Limited</td><td>Limited</td><td>Full: <code>onRender</code> controls content + toolbar</td></tr>
+            <tr><td><strong>Poll / custom UI</strong></td><td>No</td><td>No</td><td>No</td><td>Yes (e.g. poll options above toolbar)</td></tr>
+          </tbody>
+        </table>
+        <hr class="section-end" />
+      </section>
+
       <section id="examples" class="section">
         <h2>Examples</h2>
 
@@ -787,6 +907,9 @@ $('#gallery').componentViewer('open', 2);  // Open third item</code></pre>
 
       <p style="margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); color: #57606a; font-size: 13px;">
         ComponentViewer — MIT License. For live demos, open <code>example.html</code> in the plugin folder.
+      </p>
+      <p style="margin-top: 12px; color: #57606a; font-size: 13px;">
+        This plugin and its architectural design are by <a href="https://www.linkedin.com/in/sankaran-natarajan-238b0214a/" target="_blank" rel="noopener noreferrer">Sankaran N</a>.
       </p>
     </main>
   </div>
