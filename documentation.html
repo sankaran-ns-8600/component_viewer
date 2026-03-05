@@ -91,6 +91,7 @@
       <a href="#options-stage-only" class="nav-sub">Stage only</a>
       <a href="#options-slideshow" class="nav-sub">Slideshow</a>
       <a href="#poll-options" class="nav-sub">Poll options</a>
+      <a href="#attachment-comment" class="nav-sub">Attachment comment</a>
       <a href="#i18n">I18N</a>
 
       <h2>Data &amp; Rendering</h2>
@@ -240,6 +241,7 @@
             <tr><td><code>itemData</code></td><td>function</td><td><code>null</code></td><td><code>function($el, defaultItem)</code> — returns the item object for the given element. See <a href="#options-callbacks">Data and callbacks</a>.</td></tr>
             <tr><td><code>wcag</code></td><td>boolean</td><td><code>false</code></td><td>If <code>true</code>, enables focus trap, focus save/restore, ARIA dialog semantics, and button aria-labels. See <a href="#options-wcag">Accessibility (WCAG)</a>.</td></tr>
             <tr><td><code>pollOption</code></td><td>object</td><td><code>null</code></td><td>When set with <code>enabled: true</code>, items with <code>pollOptionLabel</code> show a row above the toolbar with radio/checkbox. See <a href="#poll-options">Poll options</a>.</td></tr>
+            <tr><td><code>showAttachmentComment</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, items with a non-empty <code>item.comments</code> array show a compact dark overlay at the bottom of the stage and a header button to toggle it (LC-Lightbox style). See <a href="#attachment-comment">Attachment comment</a>.</td></tr>
           </tbody>
         </table>
 
@@ -391,7 +393,7 @@
 });</code></pre>
 
         <h3 id="poll-options">Poll options</h3>
-        <p>When <code>pollOption.enabled</code> is <code>true</code> and an item has <code>pollOptionLabel</code>, a row appears above the toolbar with the label and a radio or checkbox (depending on <code>pollOption.mode</code>). Use this for polls where each option is an image or attachment. <code>onSelect(item, selected, viewer)</code> is called when the user toggles; <code>selected</code> is the new checked state. The poll row is hidden for HTML type and for image error (footer is hidden).</p>
+        <p>When <code>pollOption.enabled</code> is <code>true</code> and an item has <code>pollOptionLabel</code>, a row appears above the toolbar with the label and a radio or checkbox (depending on <code>pollOption.mode</code>). Use this for polls where each option is an image or attachment. Set <code>item.pollOptionSelected</code> to <code>true</code> (e.g. via <code>itemData</code>) to show the option as already selected when the overlay opens; if not given, the option is not selected. <code>onSelect(item, selected, viewer)</code> is called when the user toggles; <code>selected</code> is the new checked state. The poll row is hidden for HTML type and for image error (footer is hidden).</p>
         <h4>Configuration</h4>
         <table>
           <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
@@ -408,8 +410,13 @@
           <tbody>
             <tr><td><code>pollOptionLabel</code></td><td><code>data-poll-option-label</code></td></tr>
             <tr><td><code>pollOptionId</code></td><td><code>data-poll-option-id</code></td></tr>
+            <tr><td><code>pollOptionSelected</code></td><td>Set via <code>itemData</code>. When <code>true</code>, the option is shown as selected when the overlay opens; if not given, treated as not selected.</td></tr>
           </tbody>
         </table>
+
+        <h3 id="attachment-comment">Attachment comment</h3>
+        <p>When <code>showAttachmentComment</code> is <code>true</code> and an item has a non-empty <code>item.comments</code> array, a compact dark semi-transparent overlay is shown at the <strong>bottom of the stage</strong> (over the media), matching the style of <a href="https://lcweb.it/lc-lightbox-jquery-plugin/documentation" target="_blank" rel="noopener">LC-Lightbox</a>: each comment can have title (bold), optional “by Author” line, dotted separator, and description text. A header button (comment icon) toggles visibility.</p>
+        <p>Only <code>item.comments</code> is supported: an array of objects <code>{ title?, author?, text }</code>. For a single comment, pass an array with one object: <code>item.comments = [{ title: '...', author: '...', text: '...' }]</code>. Provide it via <code>itemData</code> or <code>data-comments</code> (JSON string). When there is more than one comment, the overlay shows <strong>prev/next arrows</strong> and a <strong>counter</strong> (e.g. “Comment 1 of 3”). The “by” label is localized via <code>commentBy</code>; counter and arrow labels use <code>commentCounter</code>, <code>commentPrev</code>, <code>commentNext</code>. When the option is <code>false</code> or <code>item.comments</code> is missing or empty, the toggle and panel are hidden.</p>
 
         <hr class="section-end" />
       </section>
@@ -431,8 +438,12 @@
             <tr><td><code>message</code></td><td><code>data-message</code></td></tr>
             <tr><td><code>html</code></td><td><code>data-html</code> (for type <code>html</code>)</td></tr>
             <tr><td><code>content</code></td><td>Inline content (for type <code>markdown</code> or <code>inline</code>)</td></tr>
+            <tr><td><code>author</code></td><td><code>data-author</code> or set via <code>itemData</code>. General item field (e.g. for use in <code>item.comments</code> entries).</td></tr>
+            <tr><td><code>comment</code></td><td><code>data-comment</code> or set via <code>itemData</code>. General item field; not used by the comment overlay. Use <code>item.comments</code> instead.</td></tr>
+            <tr><td><code>comments</code></td><td>Array of <code>{ title?, author?, text }</code> set via <code>itemData</code> or <code>data-comments</code> (JSON string). When <code>showAttachmentComment</code> is <code>true</code> and <code>comments</code> is a non-empty array, the overlay shows comments (one at a time if multiple, with prev/next arrows and counter). For one comment, pass <code>[{ title?, author?, text }]</code>.</td></tr>
             <tr><td><code>pollOptionLabel</code></td><td><code>data-poll-option-label</code></td></tr>
             <tr><td><code>pollOptionId</code></td><td><code>data-poll-option-id</code></td></tr>
+            <tr><td><code>pollOptionSelected</code></td><td>Set via <code>itemData</code>. When <code>true</code>, the poll option is shown as selected when the overlay opens; if not given, not selected.</td></tr>
             <tr><td><code>supplied</code></td><td><code>data-supplied</code> (jPlayer format override)</td></tr>
           </tbody>
         </table>

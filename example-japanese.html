@@ -661,11 +661,83 @@ $(<span class="str">'#post-poll'</span>).<span class="fn">componentViewer</span>
     <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
     <div><div class="post-author">Poll — Pick all that apply (checkbox, multi-choice)</div><div class="post-time">Case 13</div></div>
   </div>
-  <div class="post-body">Same as above but <code>mode: 'checkbox'</code>. You can select multiple options; <code>onSelect(item, selected, viewer)</code> is called for each toggle.</div>
+  <div class="post-body">Same as above but <code>mode: 'checkbox'</code>. You can select multiple options; <code>onSelect(item, selected, viewer)</code> is called for each toggle. <strong>Choice 2</strong> is shown as already selected via <code>pollOptionSelected: true</code> (from <code>data-poll-option-selected</code>).</div>
   <div class="post-attachments">
     <a class="att cv-item" data-type="image" data-title="choice-1.jpg" data-poll-option-id="ch1" data-poll-option-label="Choice 1 — Sunset" href="https://picsum.photos/id/122/1600/1000"><img src="https://picsum.photos/id/122/300/200" alt="" /></a>
-    <a class="att cv-item" data-type="image" data-title="choice-2.jpg" data-poll-option-id="ch2" data-poll-option-label="Choice 2 — Forest" href="https://picsum.photos/id/101/1600/1000"><img src="https://picsum.photos/id/101/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="choice-2.jpg" data-poll-option-id="ch2" data-poll-option-label="Choice 2 — Forest" data-poll-option-selected="true" href="https://picsum.photos/id/101/1600/1000"><img src="https://picsum.photos/id/101/300/200" alt="" /></a>
     <a class="att cv-item" data-type="image" data-title="choice-3.jpg" data-poll-option-id="ch3" data-poll-option-label="Choice 3 — Lake" href="https://picsum.photos/id/42/1600/1000"><img src="https://picsum.photos/id/42/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 13b: Attachment comment (showAttachmentComment + item.comment)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 13b — Attachment comment (LC-Lightbox style)</div>
+<p class="section-desc">
+  Set <code>showAttachmentComment: true</code> and provide <code>item.comments</code> (array of <code>{ title?, author?, text }</code>). For one comment use a single-element array. Example builds <code>comments</code> from <code>data-title</code>/<code>data-author</code>/<code>data-comment</code> in <code>itemData</code>. UI strings use Japanese from <code>component-viewer-japanese.js</code>.
+</p>
+
+<pre>
+$(<span class="str">'#post-comment'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">showAttachmentComment</span>: <span class="kw">true</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el, defaultItem) {
+    <span class="kw">var</span> t = $el.data(<span class="str">'title'</span>), a = $el.data(<span class="str">'author'</span>), c = $el.data(<span class="str">'comment'</span>);
+    <span class="kw">if</span> (t || a || c) defaultItem.comments = [{ <span class="kw">title</span>: t || <span class="str">''</span>, <span class="kw">author</span>: a || <span class="str">''</span>, <span class="kw">text</span>: c || <span class="str">''</span> }];
+    <span class="kw">return</span> defaultItem;
+  }
+});
+</pre>
+
+<div class="post" id="post-comment">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Attachment comment demo (添付コメント)</div><div class="post-time">Case 13b</div></div>
+  </div>
+  <div class="post-body">Open an attachment. A comment overlay appears at the bottom of the media (title, author, description); use the comment icon in the header to show or hide it. UI labels use Japanese (e.g. コメントの表示切替, 作者:). First image also supports <strong>multiple comments</strong> (Case 13c).</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Suggestive leaf" data-author="LCweb" data-comment="Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam." href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Coast view" data-author="Demo" data-comment="Beach view from the cliff. Best visited in summer." href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Valley.jpg" href="https://picsum.photos/id/15/1600/1000"><img src="https://picsum.photos/id/15/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 13c: Multiple comments (item.comments array + in-panel arrows)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 13c — Multiple comments (JSON array + arrows)</div>
+<p class="section-desc">
+  Set <code>showAttachmentComment: true</code> and provide <code>item.comments</code> as an array of <code>{ title?, author?, text }</code> (e.g. in <code>itemData</code>). The comment overlay shows one comment at a time with prev/next arrows and a counter. Counter and arrow labels use Japanese strings (e.g. コメント 1 / 3, 前のコメント, 次のコメント).
+</p>
+
+<pre>
+$(<span class="str">'#post-comment-multi'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">showAttachmentComment</span>: <span class="kw">true</span>,
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">itemData</span>: <span class="kw">function</span>($el, defaultItem) {
+    <span class="kw">if</span> ($el.data(<span class="str">'multi-comment'</span>)) {
+      defaultItem.comments = [
+        { <span class="kw">title</span>: <span class="str">'レビュー1'</span>, <span class="kw">author</span>: <span class="str">'アリス'</span>, <span class="kw">text</span>: <span class="str">'最初のコメント: 風景が素晴らしいです。'</span> },
+        { <span class="kw">title</span>: <span class="str">'レビュー2'</span>, <span class="kw">author</span>: <span class="str">'ボブ'</span>, <span class="kw">text</span>: <span class="str">'二つ目: 光の加減が完璧です。'</span> },
+        { <span class="kw">text</span>: <span class="str">'匿名メモ: 2024年春に撮影。'</span> }
+      ];
+    }
+    <span class="kw">return</span> defaultItem;
+  }
+});
+</pre>
+
+<div class="post" id="post-comment-multi">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Multiple comments demo (複数コメント)</div><div class="post-time">Case 13c</div></div>
+  </div>
+  <div class="post-body">Open the first image. The comment overlay shows three comments; use the arrows in the panel to cycle through them (labels in Japanese: 前のコメント, 次のコメント, コメント 1 / 3). Second image has a single comment.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Multi-comment image" data-multi-comment="1" href="https://picsum.photos/id/14/1600/1000"><img src="https://picsum.photos/id/14/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Single comment" data-comment="この画像の説明は1件です。" href="https://picsum.photos/id/22/1600/1000"><img src="https://picsum.photos/id/22/300/200" alt="" /></a>
   </div>
 </div>
 
@@ -1191,6 +1263,11 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 0)">Case13: Poll (checkbox) 1</button>
   <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 1)">Case13: Poll (checkbox) 2</button>
   <button class="api-btn" onclick="$('#post-poll-checkbox').componentViewer('open', 2)">Case13: Poll (checkbox) 3</button>
+  <button class="api-btn" onclick="$('#post-comment').componentViewer('open', 0)">Case13b: Comment (with)</button>
+  <button class="api-btn" onclick="$('#post-comment').componentViewer('open', 1)">Case13b: Comment (with)</button>
+  <button class="api-btn" onclick="$('#post-comment').componentViewer('open', 2)">Case13b: Comment (none)</button>
+  <button class="api-btn" onclick="$('#post-comment-multi').componentViewer('open', 0)">Case13c: Multi-comment</button>
+  <button class="api-btn" onclick="$('#post-comment-multi').componentViewer('open', 1)">Case13c: Single comment</button>
   <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 0)">Case14: Invalid URL</button>
   <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 1)">Case14: Missing (404)</button>
   <button class="api-btn" onclick="$('#post-loop-false').componentViewer('open', 0)">Case15: First</button>
@@ -1747,6 +1824,10 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
 
   $('#post-poll-checkbox').componentViewer({
     toolbar: { download: true, zoom: true },
+    itemData: function($el, defaultItem) {
+      if (defaultItem.type === 'image' && $el.data('pollOptionSelected')) defaultItem.pollOptionSelected = true;
+      return defaultItem;
+    },
     pollOption: {
       enabled: true,
       mode: 'checkbox',
@@ -1758,6 +1839,37 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
       }
     },
     onOpen: function(item) { log('Case13 onOpen [poll checkbox] ' + item.title + ' → ' + (item.pollOptionLabel || '')); }
+  });
+
+  $('#post-comment').componentViewer({
+    showAttachmentComment: true,
+    toolbar: { download: true, zoom: true },
+    itemData: function($el, defaultItem) {
+      var t = $el.data('title'), a = $el.data('author'), c = $el.data('comment');
+      if (t || a || c) defaultItem.comments = [{ title: t || '', author: a || '', text: c || '' }];
+      return defaultItem;
+    },
+    onOpen: function(item) { log('Case13b onOpen [comment] ' + item.title); }
+  });
+
+  $('#post-comment-multi').componentViewer({
+    showAttachmentComment: true,
+    toolbar: { download: true, zoom: true },
+    itemData: function($el, defaultItem) {
+      if ($el.data('multi-comment')) {
+        defaultItem.comments = [
+          { title: 'レビュー1', author: 'アリス', text: '最初のコメント: 風景が素晴らしいです。' },
+          { title: 'レビュー2', author: 'ボブ', text: '二つ目: 光の加減が完璧です。' },
+          { text: '匿名メモ: 2024年春に撮影。' }
+        ];
+      } else {
+        var c = $el.data('comment');
+        if (c) defaultItem.comments = [{ text: c }];
+      }
+      defaultItem.title = $el.data('title') || defaultItem.title;
+      return defaultItem;
+    },
+    onOpen: function(item) { log('Case13c onOpen [multi-comment] ' + item.title); }
   });
 
   /* ═══════════════════════════════════════════════════════════════

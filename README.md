@@ -154,6 +154,7 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 | `pollOption.enabled` | boolean | — | Must be `true` to show poll UI. |
 | `pollOption.mode` | string | `'radio'` | `'radio'` or `'checkbox'`. |
 | `pollOption.onSelect` | function | — | `function(item, selected, viewer)`. `selected` is the new checked state. |
+| `showAttachmentComment` | boolean | `false` | When `true`, items with a non-empty `item.comments` array show a compact dark overlay and a header button to toggle it (LC-Lightbox style). Only `item.comments` is supported: array of `{ title?, author?, text }`. For one comment use `[{ title?, author?, text }]`. Multiple comments show in-panel prev/next arrows and a counter. Use `itemData` or `data-comments` (JSON). |
 
 ---
 

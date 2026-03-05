@@ -164,7 +164,14 @@
      *   mode: 'radio' | 'checkbox'
      *   onSelect: function(item, selected, viewer) — selected is true/false
      */
-    pollOption: null
+    pollOption: null,
+
+    /**
+     * When true, enables attachment comment/description: item.comment (or data-comment) is shown
+     * in a panel below the stage, with a header toggle button to show/hide it (LC-Lightbox style).
+     * Default false.
+     */
+    showAttachmentComment: false
   };
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -222,7 +229,13 @@
     showShortcuts: 'Show shortcuts',
     keyboardShortcuts: 'Keyboard shortcuts',
     toggleTheme: 'Toggle theme',
-    toggleSlideshow: 'Play / Pause slideshow'
+    toggleSlideshow: 'Play / Pause slideshow',
+    pollUpdated: 'Updated',
+    toggleComment: 'Toggle comment',
+    commentBy: 'by',
+    commentPrev: 'Previous comment',
+    commentNext: 'Next comment',
+    commentCounter: 'Comment %1 of %2'
   };
 
   /**
@@ -256,7 +269,8 @@
     themeDark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
     fullscreen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
     fullscreenExit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>',
-    play: '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>'
+    play: '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>',
+    comment: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
   };
 
   /**
@@ -390,6 +404,7 @@
               '<div class="cv-header-left"><span class="cv-counter" id="cv-dialog-desc"></span></div>' +
               '<div class="cv-header-center"><span class="cv-title" id="cv-dialog-title"></span></div>' +
               '<div class="cv-header-right">' +
+              '<button class="cv-comment-toggle" type="button" style="display:none">' + Icons.comment + '</button>' +
               '<button class="cv-carousel-toggle" type="button" style="display:none">' + Icons.thumbnails + '</button>' +
               '<button class="cv-fullscreen-toggle" type="button" style="display:none">' + Icons.fullscreen + '</button>' +
               '<button class="cv-theme-toggle" type="button">' + Icons.themeLight + '</button>' +
@@ -400,6 +415,17 @@
               '<div class="cv-stage-wrap">' +
                 '<div class="cv-loader"><div class="cv-spinner"></div></div>' +
                 '<div class="cv-stage"></div>' +
+                '<div class="cv-comment-wrap" aria-hidden="true" role="region" aria-label="Attachment comment">' +
+                  '<div class="cv-comment-nav" style="display:none">' +
+                    '<button class="cv-comment-prev" type="button" aria-label="Previous comment">' + Icons.prev + '</button>' +
+                    '<span class="cv-comment-counter" aria-live="polite"></span>' +
+                    '<button class="cv-comment-next" type="button" aria-label="Next comment">' + Icons.next + '</button>' +
+                  '</div>' +
+                  '<div class="cv-comment-title"></div>' +
+                  '<div class="cv-comment-author"></div>' +
+                  '<div class="cv-comment-sep"></div>' +
+                  '<div class="cv-comment-inner"></div>' +
+                '</div>' +
               '</div>' +
               '<button class="cv-nav cv-nav-next" type="button"><span class="cv-nav-icon">' + Icons.next + '</span></button>' +
             '</div>' +
@@ -438,6 +464,16 @@
       this.$fullscreenToggle = this.$el.find('.cv-fullscreen-toggle');
       this.$stageWrap  = this.$el.find('.cv-stage-wrap');
       this.$stage      = this.$el.find('.cv-stage');
+      this.$commentWrap = this.$el.find('.cv-comment-wrap');
+      this.$commentNav = this.$el.find('.cv-comment-nav');
+      this.$commentPrev = this.$el.find('.cv-comment-prev');
+      this.$commentNext = this.$el.find('.cv-comment-next');
+      this.$commentCounter = this.$el.find('.cv-comment-counter');
+      this.$commentTitle = this.$el.find('.cv-comment-title');
+      this.$commentAuthor = this.$el.find('.cv-comment-author');
+      this.$commentSep = this.$el.find('.cv-comment-sep');
+      this.$commentInner = this.$el.find('.cv-comment-inner');
+      this.$commentToggle = this.$el.find('.cv-comment-toggle');
       this.$loader     = this.$el.find('.cv-loader');
       this.$prev       = this.$el.find('.cv-nav-prev');
       this.$next       = this.$el.find('.cv-nav-next');
@@ -484,13 +520,36 @@
         if (!self.activeInstance) return;
         self._carouselOpen = !self._carouselOpen;
         if (self._carouselOpen) self.$carouselWrap.addClass('cv-open'); else self.$carouselWrap.removeClass('cv-open');
-        self.$carouselToggle.attr('aria-expanded', self._carouselOpen);
+        self.$carouselToggle.attr('aria-expanded', self._carouselOpen).toggleClass('cv-active', self._carouselOpen);
         self._updateCarouselNavVisibility(self.activeInstance);
       });
       this.$fullscreenToggle.on('click', function(e) {
         e.preventDefault();
         if (!self.activeInstance) return;
         self._toggleOverlayFullscreen();
+      });
+      this.$commentToggle.on('click', function(e) {
+        e.preventDefault();
+        if (!self.activeInstance) return;
+        if (self._commentPanelVisible === undefined) self._commentPanelVisible = true;
+        self._commentPanelVisible = !self._commentPanelVisible;
+        self.$commentWrap.toggle(self._commentPanelVisible).attr('aria-hidden', !self._commentPanelVisible);
+        self.$commentToggle.attr('aria-expanded', self._commentPanelVisible).toggleClass('cv-active', self._commentPanelVisible);
+        if (self.activeInstance.opts.canShowTooltip !== false) {
+          self.$commentToggle.attr('data-cv-tooltip', self._commentPanelVisible ? str(self.activeInstance, 'toggleComment') : str(self.activeInstance, 'toggleComment'));
+        }
+      });
+      this.$commentPrev.on('click', function(e) {
+        e.preventDefault();
+        if (!self.activeInstance || !self._commentList || self._commentList.length <= 1) return;
+        self._commentIndex = self._commentIndex <= 0 ? self._commentList.length - 1 : self._commentIndex - 1;
+        self._renderCommentAt(self.activeInstance, self._commentList, self._commentIndex);
+      });
+      this.$commentNext.on('click', function(e) {
+        e.preventDefault();
+        if (!self.activeInstance || !self._commentList || self._commentList.length <= 1) return;
+        self._commentIndex = self._commentIndex >= self._commentList.length - 1 ? 0 : self._commentIndex + 1;
+        self._renderCommentAt(self.activeInstance, self._commentList, self._commentIndex);
       });
       this.$carouselPrev.on('click', function(e) {
         e.preventDefault();
@@ -863,6 +922,33 @@
       });
     },
 
+    _normalizeComments: function(item) {
+      if (!item.comments || !Array.isArray(item.comments) || item.comments.length === 0) return [];
+      return item.comments.map(function(c) {
+        var t = (c && (c.text != null)) ? String(c.text).trim() : '';
+        var ti = (c && (c.title != null)) ? String(c.title).trim() : '';
+        var a = (c && (c.author != null)) ? String(c.author).trim() : '';
+        return { title: ti, author: a, text: t };
+      }).filter(function(c) { return c.title !== '' || c.author !== '' || c.text !== ''; });
+    },
+
+    _renderCommentAt: function(inst, list, index) {
+      if (!list || !list.length || index < 0 || index >= list.length) return;
+      var c = list[index];
+      var titleText = (c.title != null) ? String(c.title).trim() : '';
+      var authorText = (c.author != null) ? String(c.author).trim() : '';
+      var text = (c.text != null) ? String(c.text).trim() : '';
+      this.$commentTitle.text(titleText).toggle(titleText !== '');
+      this.$commentAuthor.text(authorText ? (str(inst, 'commentBy') + ' ' + authorText) : '').toggle(authorText !== '');
+      this.$commentSep.toggle(titleText !== '' || authorText !== '');
+      this.$commentInner.text(text).toggle(text !== '');
+      this.$commentCounter.text(str(inst, 'commentCounter').replace('%1', String(index + 1)).replace('%2', String(list.length)));
+      if (inst.opts.wcag) {
+        this.$commentPrev.attr('aria-label', str(inst, 'commentPrev'));
+        this.$commentNext.attr('aria-label', str(inst, 'commentNext'));
+      }
+    },
+
     _bindTooltip: function() {
       var self = this;
       var $tip = this.$tooltip;
@@ -1032,6 +1118,7 @@
         this.$carouselPrev.add(this.$carouselNext).removeAttr('aria-label');
         this.$themeToggle.removeAttr('aria-label');
         this.$fullscreenToggle.removeAttr('aria-label');
+        this.$commentToggle.removeAttr('aria-label');
       }
       var theme = instance.opts.theme || 'dark';
       this.$el[0].className = 'cv-overlay cv-theme-' + theme;
@@ -1045,10 +1132,10 @@
         this.$carouselToggle.show();
         this._buildCarousel(instance);
         this.$carouselWrap.removeClass('cv-open');
-        this.$carouselToggle.attr('aria-expanded', 'false');
+        this.$carouselToggle.attr('aria-expanded', 'false').removeClass('cv-active');
         this._updateCarouselNavVisibility(instance);
       } else {
-        this.$carouselToggle.hide();
+        this.$carouselToggle.hide().removeClass('cv-active');
         this.$carouselWrap.removeClass('cv-open');
       }
       this.$fullscreenToggle.toggle(instance.opts.fullscreen !== false);
@@ -1398,6 +1485,37 @@
         this.$shell.removeClass('cv-stage-light-bg');
       }
 
+      /* 4b. Attachment comment panel (single or multiple comments; normalized array + optional prev/next) */
+      var commentList = this._normalizeComments(item);
+      var showCommentOpt = !!inst.opts.showAttachmentComment;
+      if (showCommentOpt && commentList.length > 0) {
+        this._commentList = commentList;
+        this._commentIndex = 0;
+        this._renderCommentAt(inst, commentList, 0);
+        if (commentList.length > 1) {
+          this.$commentNav.show();
+          if (inst.opts.wcag) {
+            this.$commentPrev.attr('aria-label', str(inst, 'commentPrev'));
+            this.$commentNext.attr('aria-label', str(inst, 'commentNext'));
+          }
+        } else {
+          this.$commentNav.hide();
+        }
+        if (this._commentPanelVisible === undefined) this._commentPanelVisible = true;
+        this.$commentWrap.toggle(this._commentPanelVisible).attr('aria-hidden', !this._commentPanelVisible);
+        this.$commentToggle.show().attr('aria-expanded', this._commentPanelVisible).toggleClass('cv-active', this._commentPanelVisible);
+        if (inst.opts.canShowTooltip !== false) this.$commentToggle.attr('data-cv-tooltip', str(inst, 'toggleComment'));
+        if (inst.opts.wcag) this.$commentToggle.attr('aria-label', str(inst, 'toggleComment'));
+      } else {
+        this._commentList = null;
+        this.$commentTitle.empty();
+        this.$commentAuthor.empty();
+        this.$commentInner.empty();
+        this.$commentNav.hide();
+        this.$commentWrap.hide().attr('aria-hidden', 'true');
+        this.$commentToggle.hide().removeClass('cv-active');
+      }
+
       inst._currentResult = result || {};
 
       /* 5. Resolve toolbar */
@@ -1625,6 +1743,11 @@
         if (!inst._pollSelectedSet) inst._pollSelectedSet = new Set();
       }
 
+      if (item.pollOptionSelected === true) {
+        if (mode === 'radio') inst._pollSelectedValue = value;
+        else inst._pollSelectedSet.add(value);
+      }
+
       var isChecked = mode === 'radio'
         ? (inst._pollSelectedValue === value)
         : inst._pollSelectedSet.has(value);
@@ -1635,14 +1758,17 @@
         ? '<input type="radio" name="' + escHtml(radioName) + '" value="' + escHtml(value) + '" id="' + escHtml(inputId) + '"' + (isChecked ? ' checked' : '') + '>'
         : '<input type="checkbox" id="' + escHtml(inputId) + '" value="' + escHtml(value) + '"' + (isChecked ? ' checked' : '') + '>';
 
+      var updatedText = str(inst, 'pollUpdated');
       var $wrap = $(
         '<div class="cv-poll-option-inner">' +
           '<label class="cv-poll-option-label-wrap">' + inputHtml +
           '<span class="cv-poll-option-label">' + escHtml(String(item.pollOptionLabel)) + '</span></label>' +
+          '<span class="cv-poll-option-updated cv-hidden" aria-live="polite">' + escHtml(updatedText) + '</span>' +
         '</div>'
       );
       this.$pollOption.append($wrap).addClass('cv-active');
 
+      var $updatedSpan = $wrap.find('.cv-poll-option-updated');
       $wrap.find('input').on('change', function() {
         var checked = this.checked;
         if (mode === 'radio') {
@@ -1651,6 +1777,11 @@
           if (checked) inst._pollSelectedSet.add(value); else inst._pollSelectedSet.delete(value);
         }
         if (typeof opts.onSelect === 'function') opts.onSelect(item, checked, inst);
+        $updatedSpan.removeClass('cv-hidden');
+        clearTimeout(inst._pollUpdatedTimer);
+        inst._pollUpdatedTimer = setTimeout(function() {
+          $updatedSpan.addClass('cv-hidden');
+        }, 3000);
       });
     },
 
@@ -2908,6 +3039,16 @@
           message: $el.data('message') || null,
           html: $el.data('html') || null,
           content: $el.data('content') || null,
+          comment: $el.data('comment') || null,
+          author: $el.data('author') || null,
+          comments: (function() {
+            try {
+              var c = $el.data('comments');
+              if (Array.isArray(c)) return c;
+              if (typeof c === 'string') return JSON.parse(c);
+            } catch (e) {}
+            return undefined;
+          })(),
           pollOptionLabel: $el.data('pollOptionLabel') || null,
           pollOptionId: $el.data('pollOptionId') != null ? $el.data('pollOptionId') : null
         };
