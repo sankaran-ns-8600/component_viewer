@@ -1,6 +1,6 @@
 {
   "name": "@sankaran-8600/component-viewer",
-  "version": "1.0.4",
+  "version": "1.0.1",
   "description": "jQuery plugin for attachment and media preview in an overlay",
   "main": "component-viewer.js",
   "style": "component-viewer.css",
@@ -19,7 +19,7 @@
     "sample.md"
   ],
   "scripts": {
-    "minify": "terser component-viewer.js -o component-viewer.min.js -c -m",
+    "minify": "npx terser component-viewer.js -o component-viewer.min.js -c passes=2,collapse_vars=true,reduce_vars=true -m --comments false",
     "build": "npm run minify"
   },
   "keywords": ["jquery", "viewer", "overlay", "image", "video", "pdf", "attachment"],

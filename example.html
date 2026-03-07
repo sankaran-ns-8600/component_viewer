@@ -321,6 +321,40 @@ $(<span class="str">'#post-markdown'</span>).<span class="fn">componentViewer</s
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
+     CASE 5b: Markdown with toggle raw/source view
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 5b — Markdown with toggle raw/source view</div>
+<p class="section-desc">
+  Set <code>markdown: { toggleRawView: true }</code> to show a toolbar button that toggles between <strong>rendered Markdown</strong> and <strong>raw/source view</strong> (same line-numbered style as inline). Default is <code>false</code>. Useful for viewing the source of a .md file without leaving the overlay.
+</p>
+
+<pre>
+$(<span class="str">'#post-markdown-toggle'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span> },
+  <span class="kw">markdown</span>: { <span class="kw">toggleRawView</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-markdown-toggle">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-file-lines"></i></div>
+    <div><div class="post-author">Markdown with View source toggle</div><div class="post-time">Case 5b</div></div>
+  </div>
+  <div class="post-body">Open a markdown item. Use the toolbar <strong>View source</strong> / <strong>View as Markdown</strong> button to switch between rendered HTML and raw source.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="markdown" data-title="Readme.md" data-ext="MD" data-content="# Toggle demo
+
+**Markdown** is rendered as *HTML*.
+
+- Set `markdown: { toggleRawView: true }` to enable the toggle
+- Click **View source** to see raw content
+- Click **View as Markdown** to see rendered view"><i class="fa-solid fa-file-lines"></i><span class="att-label">Inline MD (toggle on)</span></div>
+    <div class="att cv-item" data-type="markdown" data-title="README.md" data-src="https://cdn.jsdelivr.net/npm/@sankaran-8600/component-viewer@latest/README.md" data-ext="MD"><i class="fa-solid fa-file-lines"></i><span class="att-label">From URL (toggle on)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
      CASE 6: Custom jPlayer supplied format
      ═══════════════════════════════════════════════════════════════════ -->
 
@@ -563,8 +597,7 @@ $(<span class="str">'#post-no-libs'</span>).<span class="fn">componentViewer</sp
 <div class="section-title">Case 10 — Inline (source code: js, jsp, java)</div>
 <p class="section-desc">
   Type <code>inline</code> shows file content in the center stage with <strong>white background</strong> and <strong>line numbers</strong>.
-  Use <code>item.content</code> (string) or <code>item.src</code> (URL to fetch as text). For custom HTML, use <code>onRender</code>:
-  if you append an element to <code>$stage</code> and return, that is shown instead of the built-in viewer.
+  Use <code>item.content</code> (string) or <code>item.src</code> (URL to fetch as text). The toolbar includes a <strong>Copy</strong> button (inline only): clicking it copies the file content to the clipboard and shows &quot;Copied to clipboard&quot; for 2 seconds. For custom HTML, use <code>onRender</code>: if you append an element to <code>$stage</code> and return, that is shown instead of the built-in viewer.
 </p>
 
 <pre>
@@ -803,6 +836,45 @@ $(<span class="str">'#post-image-failure'</span>).<span class="fn">componentView
   <div class="post-attachments">
     <div class="att cv-item" data-type="image" data-title="Invalid URL.jpg" data-src="invalid-url"><i class="fa-solid fa-image"></i><span class="att-label">Invalid URL</span></div>
     <div class="att cv-item" data-type="image" data-title="Missing.jpg" data-src="https://example.com/nonexistent-image-404.jpg"><i class="fa-solid fa-image"></i><span class="att-label">Missing (404)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 14b: onError callback — custom error container
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 14b — onError callback (custom error container)</div>
+<p class="section-desc">
+  Use <code>onError(context)</code> to show your own error UI when a built-in error occurs (e.g. image load failed, PDF failed).
+  <code>context</code> has <code>type</code> (e.g. <code>'image'</code>, <code>'pdf'</code>), <code>message</code>, <code>item</code>, and <code>$stage</code>.
+  Return <code>true</code> to skip the default error card; otherwise the plugin shows its built-in card.
+</p>
+
+<pre>
+$(<span class="str">'#post-onerror'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="fn">onError</span>: <span class="kw">function</span>(ctx) {
+    ctx.<span class="fn">$stage</span>.empty().append(
+      <span class="str">'&lt;div class="cv-error-card" style="padding:24px;text-align:center;"&gt;'</span> +
+      <span class="str">'&lt;p style="font-size:15px;margin:0 0 8px;"&gt;Custom error: ' + ctx.type + '&lt;/p&gt;'</span> +
+      <span class="str">'&lt;p style="opacity:.8;font-size:13px;"&gt;' + ctx.message + '&lt;/p&gt;'</span> +
+      <span class="str">'&lt;p style="font-size:12px;opacity:.6;margin-top:12px;"&gt;' + (ctx.item.title || '') + '&lt;/p&gt;'</span> +
+      <span class="str">'&lt;/div&gt;'</span>
+    );
+    <span class="kw">return true</span>;  <span class="cm">// skip default error card</span>
+  }
+});
+</pre>
+
+<div class="post" id="post-onerror">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div><div class="post-author">onError — custom error UI</div><div class="post-time">Case 14b</div></div>
+  </div>
+  <div class="post-body">Click an attachment. Errors (invalid URL or 404) trigger <code>onError</code>; we show a custom message and skip the default card.</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="image" data-title="Invalid URL.jpg" data-src="invalid-url"><i class="fa-solid fa-image"></i><span class="att-label">Invalid URL</span></div>
+    <div class="att cv-item" data-type="image" data-title="Missing.jpg" data-src="https://example.com/nonexistent-404.jpg"><i class="fa-solid fa-image"></i><span class="att-label">Missing (404)</span></div>
   </div>
 </div>
 
@@ -1276,6 +1348,8 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-light').componentViewer('open', 0)">Case4: Light Image</button>
   <button class="api-btn" onclick="$('#post-light').componentViewer('open', 1)">Case4: Light Video</button>
   <button class="api-btn" onclick="$('#post-markdown').componentViewer('open', 0)">Case5: Markdown</button>
+  <button class="api-btn" onclick="$('#post-markdown-toggle').componentViewer('open', 0)">Case5b: Markdown toggle</button>
+  <button class="api-btn" onclick="$('#post-markdown-toggle').componentViewer('open', 1)">Case5b: Markdown from URL</button>
   <button class="api-btn" onclick="$('#post-supplied').componentViewer('open', 0)">Case6: Custom Supplied</button>
   <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(0).componentViewer('open', 0)">Case6: Image 1</button>
   <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(1).componentViewer('open', 0)">Case6: Image 2</button>
@@ -1306,6 +1380,8 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-comment-multi').componentViewer('open', 1)">Case13c: Single comment</button>
   <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 0)">Case14: Invalid URL</button>
   <button class="api-btn" onclick="$('#post-image-failure').componentViewer('open', 1)">Case14: Missing (404)</button>
+  <button class="api-btn" onclick="$('#post-onerror').componentViewer('open', 0)">Case14b: onError (Invalid)</button>
+  <button class="api-btn" onclick="$('#post-onerror').componentViewer('open', 1)">Case14b: onError (404)</button>
   <button class="api-btn" onclick="$('#post-loop-false').componentViewer('open', 0)">Case15: First</button>
   <button class="api-btn" onclick="$('#post-loop-false').componentViewer('open', 2)">Case15: Last</button>
   <button class="api-btn" onclick="$('#post-counter-hidden').componentViewer('open', 0)">Case16: Image</button>
@@ -1675,6 +1751,15 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
     onOpen: function(item) { log('Case5 (markdown) onOpen [' + item.type + '] ' + item.title); }
   });
 
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 5b: Markdown with toggle raw/source view
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-markdown-toggle').componentViewer({
+    toolbar: { download: true },
+    markdown: { toggleRawView: true },
+    onOpen: function(item) { log('Case5b (markdown toggle) onOpen [' + item.type + '] ' + item.title); }
+  });
 
   /* ═══════════════════════════════════════════════════════════════
      CASE 6: Custom jPlayer supplied format
@@ -1932,6 +2017,24 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
   $('#post-image-failure').componentViewer({
     toolbar: { download: true, zoom: true },
     onOpen: function(item) { log('Case14 onOpen [image failure] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 14b: onError callback (custom error container)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-onerror').componentViewer({
+    toolbar: { download: true, zoom: true },
+    onError: function(ctx) {
+      ctx.$stage.empty().append(
+        '<div class="cv-error-card" style="padding:24px;text-align:center;">' +
+        '<p style="font-size:15px;margin:0 0 8px;">Custom error: ' + ctx.type + '</p>' +
+        '<p style="opacity:.8;font-size:13px;">' + ctx.message + '</p>' +
+        '<p style="font-size:12px;opacity:.6;margin-top:12px;">' + (ctx.item.title || '') + '</p>' +
+        '</div>'
+      );
+      return true;
+    }
   });
 
   /* ═══════════════════════════════════════════════════════════════

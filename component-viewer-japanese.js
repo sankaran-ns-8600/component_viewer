@@ -99,6 +99,7 @@
       cMapPacked: true,
       annotations: true,      // render PDF annotations (links, highlights); compatible with PDF.js 2.2.x and 3.x (uses Util.normalizeRect when available, else internal fallback)
       autoFit: true,          // if true, scale page to fit stage (width and height); if false, fit to width only
+      autoFitMinScale: 0.75,  // when autoFit is true, scale never goes below this so the PDF stays readable (default 0.75 = 75%)
       autoFitMaxScale: 2.5    // max scale when autoFit is true (cap zoom)
     },
 
@@ -203,6 +204,8 @@
     nextPage: '次のページ',
     rotate: '回転',
     print: '印刷',
+    extractText: 'テキストを抽出',
+    copySuccess: 'コピーしました',
     pdf: 'PDF',
     previewNotAvailable: 'このファイルのプレビューはありません',
     file: 'ファイル',
@@ -256,6 +259,8 @@
     nextPage: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>',
     thumbnails: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
     print: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    copy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    extractText: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
     themeLight: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
     themeDark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
     fullscreen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
@@ -382,6 +387,7 @@
     _pinchStartDist: 0, _pinchStartZoom: 1,
     _pinchMidX: 0, _pinchMidY: 0, _pinchPanStartX: 0, _pinchPanStartY: 0,
     _justEndedPinch: false,
+    _pdfPinchStartDist: 0, _pdfPinchStartScale: 0, _pdfPinchLastScale: 0,
     _isImageItem: false, _isPdfItem: false, _isCustomRendered: false,
     _swipeStartX: 0, _swipeStartY: 0, _swipeEndX: 0, _swipeEndY: 0, _swipeTracking: false,
 
@@ -777,26 +783,60 @@
       });
       $(document).on('mouseup.cv-pan', function() { self._isPanning = false; });
 
+      /* Non-passive touch listeners so preventDefault works for PDF pinch (browsers use passive:true by default) */
+      var wrapEl = this.$stageWrap[0];
+      if (wrapEl && wrapEl.addEventListener) {
+        wrapEl.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 2 && self._isPdfItem && self.activeInstance && self.activeInstance._currentResult && self.activeInstance._currentResult.pdfZoom) e.preventDefault();
+        }, { capture: true, passive: false });
+        wrapEl.addEventListener('touchmove', function(e) {
+          if (e.touches.length === 2 && self._pdfPinchStartDist > 0) e.preventDefault();
+        }, { capture: true, passive: false });
+      }
+
       /* touch pinch + pan */
       this.$stageWrap.on('touchstart', function(e) {
-        if (!self._isImageItem) return;
         var t = e.originalEvent.touches;
         if (t.length === 2) {
+          var inst = self.activeInstance;
+          if (self._isPdfItem && inst && inst._currentResult && inst._currentResult.pdfZoom) {
+            e.preventDefault();
+            self._swipeTracking = false;
+            self._pdfPinchStartDist = self._touchDist(t);
+            self._pdfPinchStartScale = inst._currentResult.pdfZoom.getScale();
+            self._pdfPinchLastScale = self._pdfPinchStartScale;
+            return;
+          }
+          if (!self._isImageItem) return;
           e.preventDefault();
           self._isPanning = false;
           self._pinchStartDist = self._touchDist(t); self._pinchStartZoom = self._zoom;
           self._pinchMidX = (t[0].clientX + t[1].clientX) / 2;
           self._pinchMidY = (t[0].clientY + t[1].clientY) / 2;
           self._pinchPanStartX = self._panX; self._pinchPanStartY = self._panY;
-        } else if (t.length === 1 && self._zoom > 1 && !self._isGifItem()) {
+        } else if (t.length === 1 && self._isImageItem && self._zoom > 1 && !self._isGifItem()) {
           self._isPanning = true;
           self._panOriginX = t[0].clientX; self._panOriginY = t[0].clientY;
           self._panStartX = self._panX; self._panStartY = self._panY;
         }
       });
       this.$stageWrap.on('touchmove', function(e) {
-        if (!self._isImageItem) return;
         var t = e.originalEvent.touches;
+        if (t.length === 2 && self._pdfPinchStartDist > 0) {
+          var inst = self.activeInstance;
+          if (inst && inst._currentResult && inst._currentResult.pdfZoom) {
+            e.preventDefault();
+            var dist = self._touchDist(t);
+            var ratio = dist / self._pdfPinchStartDist;
+            var visualScale = Math.max(0.25, Math.min(5, self._pdfPinchStartScale * ratio));
+            self._pdfPinchLastScale = visualScale;
+            var $main = self.$stage.find('.cv-pdf-main');
+            var relScale = self._pdfPinchStartScale > 0 ? visualScale / self._pdfPinchStartScale : 1;
+            if ($main.length) $main.css({ 'transform-origin': '50% 50%', 'transform': 'scale(' + relScale + ')' });
+            return;
+          }
+        }
+        if (!self._isImageItem) return;
         if (t.length === 2 && self._pinchStartDist) {
           e.preventDefault();
           self._justEndedPinch = false;
@@ -832,7 +872,18 @@
       });
       this.$stageWrap.on('touchend touchcancel', function(e) {
         var rem = e.originalEvent.touches;
-        if (rem.length === 1 && self._zoom > 1 && !self._isGifItem()) {
+        if (rem.length === 0 && self._pdfPinchStartDist > 0) {
+          var inst = self.activeInstance;
+          if (inst && inst._currentResult && inst._currentResult.pdfZoom) {
+            inst._currentResult.pdfZoom.setScale(self._pdfPinchLastScale);
+            self.$stage.find('.cv-pdf-main').css({ 'transition': '', 'transform': '' });
+            self._swipeTracking = false;
+          }
+          self._pdfPinchStartDist = 0;
+          self._pdfPinchStartScale = 0;
+          self._pdfPinchLastScale = 0;
+        }
+        if (rem.length === 1 && self._isImageItem && self._zoom > 1 && !self._isGifItem()) {
           self._isPanning = true;
           self._justEndedPinch = self._pinchStartDist > 0;
           self._panOriginX = rem[0].clientX;
@@ -2321,7 +2372,9 @@
     var pdfOpts = inst.opts.pdf || {};
     var showAnnotations = pdfOpts.annotations !== false;
     var useAutoFit = pdfOpts.autoFit !== false;
+    var minScale = (typeof pdfOpts.autoFitMinScale === 'number' ? pdfOpts.autoFitMinScale : 0.75);
     var maxScale = (typeof pdfOpts.autoFitMaxScale === 'number' ? pdfOpts.autoFitMaxScale : 2.5);
+    var enableTextLayer = pdfOpts.textLayer !== false;
 
     var $container = $(
       '<div class="cv-pdf-wrap">' +
@@ -2340,6 +2393,7 @@
     var rendering = false;
     var pdfResizeTid = null;
     var scrollTid = null;
+    var textLayerVisible = false;
 
     function applyAutoFitScale() {
       if (!useAutoFit || !pdfDoc) return;
@@ -2347,7 +2401,8 @@
       pdfDoc.getPage(1).then(function(page) {
         var vp1 = page.getViewport({ scale: 1, rotation: rotation });
         if (size.w > 0 && size.h > 0) {
-          pdfScale = Math.max(0.25, Math.min(size.w / vp1.width, size.h / vp1.height, maxScale));
+          var fitScale = Math.min(size.w / vp1.width, size.h / vp1.height);
+          pdfScale = Math.max(minScale, Math.min(fitScale, maxScale));
         }
         renderAllPages();
       });
@@ -2400,6 +2455,9 @@
         var renderPromise = renderTask.promise || renderTask;
         renderPromise.then(function() {
           if (showAnnotations) renderAnnotations(page, vp, $pageWrap);
+          if (enableTextLayer && textLayerVisible && typeof page.getTextContent === 'function') {
+            page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pageWrap); });
+          }
           if (done) done();
         });
       });
@@ -2450,6 +2508,9 @@
         var renderPromise = renderTask.promise || renderTask;
         renderPromise.then(function() {
           if (showAnnotations) renderAnnotations(page, vp, $pageWrap);
+          if (enableTextLayer && textLayerVisible && typeof page.getTextContent === 'function') {
+            page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pageWrap); });
+          }
           rendering = false;
           if ($pageInfo) $pageInfo.text(pageNum + ' / ' + totalPages);
         });
@@ -2460,6 +2521,59 @@
       if (!r || r.length < 4) return [0, 0, 0, 0];
       var x1 = r[0], y1 = r[1], x2 = r[2], y2 = r[3];
       return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+    }
+
+    function multiplyTransform(m1, m2) {
+      if (!m1 || m1.length < 6 || !m2 || m2.length < 6) return m2 || m1;
+      return [
+        m1[0] * m2[0] + m1[2] * m2[1],
+        m1[1] * m2[0] + m1[3] * m2[1],
+        m1[0] * m2[2] + m1[2] * m2[3],
+        m1[1] * m2[2] + m1[3] * m2[3],
+        m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+        m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
+      ];
+    }
+
+    function renderTextLayerForPage(textContent, viewport, $pageWrap) {
+      if (!textContent || !textContent.items || !viewport) return;
+      var Util = (typeof pdfjsLib !== 'undefined' && pdfjsLib.Util && typeof pdfjsLib.Util.transform === 'function') ? pdfjsLib.Util : null;
+      var vpTransform = viewport.transform;
+      if (!vpTransform || vpTransform.length < 6) vpTransform = [1, 0, 0, 1, 0, 0];
+      var $layer = $('<div class="cv-pdf-text-layer"></div>');
+      $layer.css({ position: 'absolute', left: 0, top: 0, width: viewport.width + 'px', height: viewport.height + 'px', overflow: 'hidden', pointerEvents: 'auto', userSelect: 'text', WebkitUserSelect: 'text' });
+      var items = textContent.items;
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var str = (item && item.str != null) ? String(item.str) : '';
+        var t = (item && item.transform != null && item.transform.length >= 6) ? item.transform : [1, 0, 0, 1, 0, 0];
+        var tx = Util ? Util.transform(vpTransform, t) : multiplyTransform(vpTransform, t);
+        var left = tx[4];
+        var fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]) || 12;
+        var top = tx[5] - fontHeight;
+        var span = document.createElement('span');
+        span.className = 'cv-pdf-text-span';
+        span.style.cssText = 'position:absolute;left:' + left + 'px;top:' + top + 'px;font-size:' + fontHeight + 'px;line-height:1.15;white-space:pre;pointer-events:auto;';
+        span.textContent = str;
+        $layer[0].appendChild(span);
+      }
+      var $ann = $pageWrap.find('.cv-pdf-annotations');
+      if ($ann.length) $ann.before($layer);
+      else $pageWrap.append($layer);
+    }
+
+    function renderTextLayerForAllPages() {
+      if (!pdfDoc || typeof pdfDoc.getPage !== 'function') return;
+      $canvasWrap.find('.cv-pdf-page').each(function() {
+        var $pw = $(this);
+        var num = parseInt($pw.attr('data-page'), 10);
+        if (!num) return;
+        pdfDoc.getPage(num).then(function(page) {
+          var vp = page.getViewport({ scale: pdfScale, rotation: rotation });
+          if (typeof page.getTextContent !== 'function') return;
+          page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pw); });
+        });
+      });
     }
 
     function renderAnnotations(page, viewport, $pageWrap) {
@@ -2576,7 +2690,8 @@
         pdf.getPage(1).then(function(fp) {
           var vp = fp.getViewport({ scale: 1 });
           if (useAutoFit && wrapW > 0 && wrapH > 0) {
-            pdfScale = Math.max(0.25, Math.min(wrapW / vp.width, wrapH / vp.height, maxScale));
+            var fitScale = Math.min(wrapW / vp.width, wrapH / vp.height);
+            pdfScale = Math.max(minScale, Math.min(fitScale, maxScale));
           } else if (!useAutoFit && wrapW > 0) {
             pdfScale = Math.max(0.25, Math.min(wrapW / vp.width, maxScale));
           } else {
@@ -2626,12 +2741,36 @@
 
     toolbarItems.push('separator');
 
+    var pdfZoomTransitioning = false;
+    function applyPdfZoomTransition(targetScale, done) {
+      if (pdfZoomTransitioning || !pdfDoc) return;
+      targetScale = Math.max(0.25, Math.min(5, targetScale));
+      if (targetScale === pdfScale) { if (done) done(); return; }
+      pdfZoomTransitioning = true;
+      var oldScale = pdfScale;
+      var ratio = targetScale / oldScale;
+      pdfScale = targetScale;
+      renderAllPages(function() {
+        $main.css({ 'transform-origin': '50% 50%', 'transition': 'transform 0.3s ease-out' });
+        $main.css('transform', 'scale(' + (1 / ratio) + ')');
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            $main.css('transform', 'scale(1)');
+            $main.one('transitionend', function() {
+              $main.css({ 'transition': '', 'transform': '' });
+              pdfZoomTransitioning = false;
+              if (done) done();
+            });
+          });
+        });
+      });
+    }
     var $tbZoomOut = $('<button class="cv-tb-btn cv-tb-pdf-zoom-out"' + tipAttr('zoomOut') + ariaAttr('zoomOut') + '>' + Icons.zoomOut + '</button>');
-    $tbZoomOut.on('click', function() { pdfScale = Math.max(0.25, pdfScale - 0.25); renderAllPages(); });
+    $tbZoomOut.on('click', function() { applyPdfZoomTransition(Math.max(0.25, pdfScale - 0.25)); });
     toolbarItems.push($tbZoomOut[0]);
 
     var $tbZoomIn = $('<button class="cv-tb-btn cv-tb-pdf-zoom-in"' + tipAttr('zoomIn') + ariaAttr('zoomIn') + '>' + Icons.zoomIn + '</button>');
-    $tbZoomIn.on('click', function() { pdfScale = Math.min(5, pdfScale + 0.25); renderAllPages(); });
+    $tbZoomIn.on('click', function() { applyPdfZoomTransition(Math.min(5, pdfScale + 0.25)); });
     toolbarItems.push($tbZoomIn[0]);
 
     var $tbRotate = $('<button class="cv-tb-btn"' + tipAttr('rotate') + ariaAttr('rotate') + '>' + Icons.rotateCw + '</button>');
@@ -2649,13 +2788,37 @@
     });
     toolbarItems.push($tbPrint[0]);
 
+    if (enableTextLayer) {
+      var $tbExtract = $('<button class="cv-tb-btn cv-tb-pdf-extract"' + tipAttr('extractText') + ariaAttr('extractText') + '>' + Icons.extractText + '</button>');
+      $tbExtract.on('click', function() {
+        textLayerVisible = !textLayerVisible;
+        if (textLayerVisible) {
+          renderTextLayerForAllPages();
+        } else {
+          $canvasWrap.find('.cv-pdf-text-layer').remove();
+        }
+        $(this).toggleClass('cv-active', textLayerVisible);
+      });
+      toolbarItems.push($tbExtract[0]);
+    }
+
     return {
       toolbar: toolbarItems,
+      pdfZoom: {
+        getScale: function() { return pdfScale; },
+        setScale: function(s) {
+          s = Math.max(0.25, Math.min(5, s));
+          if (s === pdfScale) return;
+          pdfScale = s;
+          renderAllPages();
+        }
+      },
       destroy: function() {
         clearTimeout(pdfResizeTid);
         clearTimeout(scrollTid);
         $(window).off('resize.cv-pdf-autofit');
         $main.off('scroll.cv-pdf-page');
+        $main.css({ 'transition': '', 'transform': '' });
         if (pdfDoc) pdfDoc.destroy();
       }
     };

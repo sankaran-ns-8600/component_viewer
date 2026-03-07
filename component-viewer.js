@@ -1,29 +1,4 @@
-/**
- * ComponentViewer
- *
- * Common outer wrapper + toolbar with built-in renderers.
- *
- * Built-in renderers:
- *   image   – zoom slider, wheel/pinch zoom, drag pan (clamped). Includes GIF; animation is preserved by the browser when using <img src="...">.
- *   video   – jPlayer powered (falls back to unsupported if jPlayer not loaded)
- *   audio   – jPlayer powered (falls back to unsupported if jPlayer not loaded)
- *   pdf     – pdf.js powered (falls back to unsupported if pdfjsLib not loaded)
- *   markdown – Markdown rendered as HTML (item.content or fetch item.src; uses window.marked when present, else minimal built-in parser)
- *
- * Renderer priority:
- *   1. onRender callback (customer full override — gets first shot)
- *   2. Built-in renderer for the type
- *   3. Unsupported / no-preview card
- *
- * Toolbar priority:
- *   - onRender returns { toolbar } → full replacement (no auto download/zoom)
- *   - Built-in renderer returns toolbar → merged with toolbarItems + download + zoom
- *   - onToolbar callback can modify/replace the resolved toolbar before rendering
- *
- * Instantiated per-post (not globally).
- *
- * (c) 2026 | MIT License
- */
+/* ComponentViewer: overlay + toolbar; renderers: image, video (jPlayer), audio (jPlayer), pdf (pdf.js), markdown. Priority: onRender → built-in → unsupported. Toolbar: onRender { toolbar } or built-in + toolbarItems + download/zoom; onToolbar can modify. Per-container. (c) 2026 | MIT */
 ;(function($, window, document) {
   'use strict';
 
@@ -31,9 +6,7 @@
   var jpCounter = 0;
   var SLIDESHOW_DEFAULT_INTERVAL = 4;
 
-  /* ═══════════════════════════════════════════════════════════════════
-     DEFAULT OPTIONS
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- DEFAULT OPTIONS --- */
 
   var DEFAULTS = {
     selector: '.cv-item',
@@ -42,24 +15,11 @@
     keyboardNav: true,
     showCounter: true,   // when false, hide the "1 / 6" counter in the header
     preloadAdjacentImages: true,   // when true, preload next/prev item if image so navigation is instant (Colorbox-style)
-    /** When true, hide header and footer completely; only the center stage and prev/next navigation are shown. Close via Escape or backdrop click. Default false. Can be an object: { enabled: false, hideNavigation: false }. When hideNavigation is true, prev/next buttons are hidden; user can still move with keyboard (arrow keys). */
+    /** When true, hide header/footer; only stage and prev/next. Close via Escape/backdrop. Object: { enabled, hideNavigation }. */
     stageOnly: { enabled: false, hideNavigation: false },
-    /**
-     * Carousel: strip of thumbnails below the stage. Set to an object to configure.
-     * carousel: { enabled: true, navThreshold: 4 }
-     * - enabled: when true, a header button toggles the carousel strip (thumbnails). Default false.
-     * - navThreshold: when item count exceeds this, show prev/next buttons to scroll the carousel (default 4).
-     */
+    /** Carousel: thumbnails below stage. { enabled, navThreshold } (default 4). */
     carousel: { enabled: false, navThreshold: 4 },
-    /**
-     * Slideshow: auto-advance to next item. Set to an object to enable.
-     * slideshow: { enabled: true, interval: 4, autoStart: true, advanceMedia: 'interval', showProgress: false }
-     * - interval: seconds to show each item before advancing (default 4)
-     * - autoStart: if true, slideshow starts when overlay opens; if false, user must click Play slideshow
-     * - advanceMedia: 'interval' = use same interval for all types; 'onEnd' = for video/audio advance when playback ends (falls back to interval if no media element)
-     * - hideSlideshowButton: when true and autoStart is true, the Play/Pause slideshow button is hidden (only considered when autoStart is true)
-     * - showProgress: when true, a progress bar in the footer shows time until next slide (default false)
-     */
+    /** Slideshow: auto-advance. { enabled, interval, autoStart, advanceMedia: 'interval'|'onEnd', showProgress, hideSlideshowButton }. */
     slideshow: null,
     theme: 'dark',
     themeToggle: true,
@@ -96,24 +56,16 @@
       cMapPacked: true,
       annotations: true,      // render PDF annotations (links, highlights); compatible with PDF.js 2.2.x and 3.x (uses Util.normalizeRect when available, else internal fallback)
       autoFit: true,          // if true, scale page to fit stage (width and height); if false, fit to width only
+      autoFitMinScale: 0.75,  // when autoFit is true, scale never goes below this so the PDF stays readable (default 0.75 = 75%)
       autoFitMaxScale: 2.5    // max scale when autoFit is true (cap zoom)
     },
 
-    /**
-     * Video options. onGetHdUrl: function(item, viewer) — return URL for HD/high-quality source, or null.
-     * When returned URL is valid, an "HD" button is shown; clicking it switches playback to that URL from the current timestamp.
-     * You can also set item.hdUrl in itemData to provide the HD URL per item (takes precedence if onGetHdUrl not used).
-     */
-    video: { onGetHdUrl: null },
+    /** When true, markdown items get a toolbar button to toggle between rendered markdown and raw/source view. Default false. */
+    markdown: { toggleRawView: false },
 
-    /**
-     * Supported media formats (jPlayer supplied string).
-     * Format is derived from file extension; these options restrict/override.
-     * Use supportedVideoFormats for video, supportedAudioFormats for audio.
-     * Per-item override: set item.supplied in itemData if needed.
-     *
-     * Examples: 'm4v', 'm4v, webmv', 'mp3', 'mp3, oga'
-     */
+    /** Video: onGetHdUrl(item, viewer) for HD URL; item.hdUrl per item overrides. */
+    video: { onGetHdUrl: null },
+    /** Supported media formats (e.g. 'm4v', 'mp3'); per-item override via item.supplied. */
     supportedVideoFormats: null,
     supportedAudioFormats: null,
 
@@ -122,19 +74,9 @@
     onDownload: null,
     itemData: null,
 
-    /**
-     * Customer full override. Called for EVERY item (including image).
-     * If it renders something into $stage, the built-in renderer is skipped.
-     * Return: { toolbar: [...], destroy: fn }
-     */
+    /** Full override: onRender renders into $stage; return { toolbar, destroy }. */
     onRender: null,
-
-    /**
-     * Toolbar modifier. Called AFTER toolbar is resolved (from built-in or default).
-     * Receives the default toolbar array — modify it and return, or return a new array.
-     *   onToolbar(item, defaultToolbar, viewer)
-     * Not called when onRender provides a toolbar (customer has full control).
-     */
+    /** onToolbar(item, defaultToolbar, viewer): modify toolbar; not called when onRender provides toolbar. */
     onToolbar: null,
 
     onLoading: null,
@@ -144,6 +86,9 @@
     /** Fires at the start of the close process, before teardown. Similar to Colorbox onCleanup. */
     onCleanup: null,
     onClose: null,
+
+    /** onError({ type, message, item, $stage }): return true to handle and skip default error card. */
+    onError: null,
 
     /**
      * When true, enables WCAG-oriented behavior: focus trap (Tab loops inside overlay),
@@ -174,9 +119,7 @@
     showAttachmentComment: false
   };
 
-  /* ═══════════════════════════════════════════════════════════════════
-     DEFAULT STRINGS (I18N) — single source for all user-facing text
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- DEFAULT STRINGS (I18N) --- */
 
   var DEFAULT_STRINGS = {
     close: 'Close',
@@ -212,6 +155,11 @@
     nextPage: 'Next Page',
     rotate: 'Rotate',
     print: 'Print',
+    extractText: 'Extract text',
+    copy: 'Copy',
+    copiedToClipboard: 'Copied to clipboard',
+    viewSource: 'View source',
+    viewMarkdown: 'View as Markdown',
     pdf: 'PDF',
     previewNotAvailable: 'Preview is not available for this file',
     file: 'File',
@@ -247,9 +195,7 @@
     return (v != null && v !== '') ? String(v) : key;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     ICONS
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- ICONS --- */
 
   var Icons = {
     close: '&times;',
@@ -265,6 +211,8 @@
     nextPage: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>',
     thumbnails: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
     print: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    copy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    extractText: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
     themeLight: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
     themeDark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
     fullscreen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
@@ -326,6 +274,61 @@
     return false;
   }
 
+  function getItemDownloadUrl(item) {
+    if (!item) return null;
+    var url = item.downloadUrl || item.src;
+    return (url && isSafeDownloadUrl(url)) ? url : null;
+  }
+
+  function performDownload(item, inst) {
+    if (inst && typeof inst.opts.onDownload === 'function') {
+      inst.opts.onDownload(item, inst);
+      return;
+    }
+    var url = getItemDownloadUrl(item);
+    if (!url) return;
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = safeDownloadFilename(item.title);
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function copyTextToClipboard(text, inst) {
+    function showCopied() {
+      if (inst && Overlay.$stripMessage && Overlay.$stripMessage.length) Overlay._showStripMessage(str(inst, 'copiedToClipboard'));
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(showCopied).catch(function() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { if (document.execCommand('copy')) showCopied(); } catch (e) {}
+        document.body.removeChild(ta);
+      });
+      return;
+    }
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { if (document.execCommand('copy')) showCopied(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function getFullscreenElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+  }
+
+  var RESERVED_SHORTCUT_KEYS = { escape: 1, arrowleft: 1, arrowright: 1, ' ': 1, m: 1, r: 1, q: 1, d: 1, p: 1, '?': 1, '+': 1, '-': 1, '=': 1, f: 1, t: 1, c: 1, s: 1 };
+
   /**
    * Sanitize HTML string for use as toolbar icon to prevent XSS (e.g. <svg onload="..."> or <script>).
    * Removes script elements and event-handler attributes.
@@ -373,9 +376,7 @@
     return fromExt;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     SHARED OVERLAY
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- SHARED OVERLAY --- */
 
   var Overlay = {
     built: false, visible: false, activeInstance: null,
@@ -450,50 +451,16 @@
               '</div>' +
             '</div>' +
             '<div class="cv-shortcuts-popup" role="dialog" aria-label="Keyboard shortcuts" aria-hidden="true"></div>' +
+            '<div class="cv-strip-message" id="cv-strip-message" aria-live="polite" role="status"></div>' +
           '</div>' +
         '</div>';
 
       $('body').append(html);
       if (!$('#cv-tooltip').length) $('body').append('<div class="cv-tooltip" id="cv-tooltip" aria-hidden="true"></div>');
-      this.$el         = $('.cv-overlay').last();
-      this.$backdrop   = this.$el.find('.cv-backdrop');
-      this.$shell      = this.$el.find('.cv-shell');
-      this.$title       = this.$el.find('.cv-title');
-      this.$counter     = this.$el.find('.cv-counter');
-      this.$themeToggle = this.$el.find('.cv-theme-toggle');
-      this.$fullscreenToggle = this.$el.find('.cv-fullscreen-toggle');
-      this.$stageWrap  = this.$el.find('.cv-stage-wrap');
-      this.$stage      = this.$el.find('.cv-stage');
-      this.$commentWrap = this.$el.find('.cv-comment-wrap');
-      this.$commentNav = this.$el.find('.cv-comment-nav');
-      this.$commentPrev = this.$el.find('.cv-comment-prev');
-      this.$commentNext = this.$el.find('.cv-comment-next');
-      this.$commentCounter = this.$el.find('.cv-comment-counter');
-      this.$commentTitle = this.$el.find('.cv-comment-title');
-      this.$commentAuthor = this.$el.find('.cv-comment-author');
-      this.$commentSep = this.$el.find('.cv-comment-sep');
-      this.$commentInner = this.$el.find('.cv-comment-inner');
-      this.$commentToggle = this.$el.find('.cv-comment-toggle');
-      this.$loader     = this.$el.find('.cv-loader');
-      this.$prev       = this.$el.find('.cv-nav-prev');
-      this.$next       = this.$el.find('.cv-nav-next');
-      this.$carouselWrap   = this.$el.find('.cv-carousel-wrap');
-      this.$carousel       = this.$el.find('.cv-carousel');
-      this.$carouselToggle = this.$el.find('.cv-carousel-toggle');
-      this.$carouselPrev   = this.$el.find('.cv-carousel-prev');
-      this.$carouselNext   = this.$el.find('.cv-carousel-next');
-      this.$footer     = this.$el.find('.cv-footer');
-      this.$pollOption = this.$el.find('.cv-poll-option');
-      this.$footerRow  = this.$el.find('.cv-footer-row');
-      this.$toolbar    = this.$el.find('.cv-toolbar');
-      this.$zoomWidget = this.$el.find('.cv-zoom-widget');
-      this.$zoomSlider = this.$el.find('.cv-zoom-slider');
-      this.$zoomPct    = this.$el.find('.cv-zoom-pct');
-      this.$slideshowProgressWrap = this.$el.find('.cv-slideshow-progress-wrap');
-      this.$slideshowProgressBar  = this.$el.find('.cv-slideshow-progress-bar');
-      this.$shortcutsPopup = this.$el.find('.cv-shortcuts-popup');
-      this.$tooltip   = $('#cv-tooltip');
-      this.$zoomPct.hide();  // shown only when zoom.showPercentage is true (see _resolveToolbar)
+      this.$el = $('.cv-overlay').last();
+      var sel = { $backdrop: '.cv-backdrop', $shell: '.cv-shell', $title: '.cv-title', $counter: '.cv-counter', $themeToggle: '.cv-theme-toggle', $fullscreenToggle: '.cv-fullscreen-toggle', $stageWrap: '.cv-stage-wrap', $stage: '.cv-stage', $commentWrap: '.cv-comment-wrap', $commentNav: '.cv-comment-nav', $commentPrev: '.cv-comment-prev', $commentNext: '.cv-comment-next', $commentCounter: '.cv-comment-counter', $commentTitle: '.cv-comment-title', $commentAuthor: '.cv-comment-author', $commentSep: '.cv-comment-sep', $commentInner: '.cv-comment-inner', $commentToggle: '.cv-comment-toggle', $loader: '.cv-loader', $prev: '.cv-nav-prev', $next: '.cv-nav-next', $carouselWrap: '.cv-carousel-wrap', $carousel: '.cv-carousel', $carouselToggle: '.cv-carousel-toggle', $carouselPrev: '.cv-carousel-prev', $carouselNext: '.cv-carousel-next', $footer: '.cv-footer', $pollOption: '.cv-poll-option', $footerRow: '.cv-footer-row', $toolbar: '.cv-toolbar', $stripMessage: '.cv-strip-message', $zoomWidget: '.cv-zoom-widget', $zoomSlider: '.cv-zoom-slider', $zoomPct: '.cv-zoom-pct', $slideshowProgressWrap: '.cv-slideshow-progress-wrap', $slideshowProgressBar: '.cv-slideshow-progress-bar', $shortcutsPopup: '.cv-shortcuts-popup', $tooltip: '#cv-tooltip' };
+      for (var p in sel) this[p] = sel[p].charAt(0) === '#' ? $(sel[p]) : this.$el.find(sel[p]);
+      this.$zoomPct.hide();
       this._bindEvents();
       this._bindTooltip();
       this.built = true;
@@ -535,9 +502,7 @@
         self._commentPanelVisible = !self._commentPanelVisible;
         self.$commentWrap.toggle(self._commentPanelVisible).attr('aria-hidden', !self._commentPanelVisible);
         self.$commentToggle.attr('aria-expanded', self._commentPanelVisible).toggleClass('cv-active', self._commentPanelVisible);
-        if (self.activeInstance.opts.canShowTooltip !== false) {
-          self.$commentToggle.attr('data-cv-tooltip', self._commentPanelVisible ? str(self.activeInstance, 'toggleComment') : str(self.activeInstance, 'toggleComment'));
-        }
+        if (self.activeInstance.opts.canShowTooltip !== false) self.$commentToggle.attr('data-cv-tooltip', str(self.activeInstance, 'toggleComment'));
       });
       this.$commentPrev.on('click', function(e) {
         e.preventDefault();
@@ -593,7 +558,7 @@
             return;
           }
           /* Escape closes the current fullscreen first (video or overlay); only close overlay when nothing is fullscreen */
-          var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+          var fsEl = getFullscreenElement();
           if (fsEl) {
             if (document.exitFullscreen) document.exitFullscreen();
             else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -707,47 +672,14 @@
           }
           return;
         }
-        if (e.key === 'q') {
-          var $hd = self.$stage.find('.cv-jp-hd:visible');
-          if ($hd.length) {
-            e.preventDefault();
-            $hd.first().trigger('click');
-          }
-          return;
-        }
-        if (e.key === 'd') {
-          var $dl = self.$toolbar.find('.cv-tb-download:visible');
-          if ($dl.length) { e.preventDefault(); $dl.first().trigger('click'); }
-          return;
-        }
-        if (e.key === 'p') {
-          var $pdfPrint = self.$toolbar.find('.cv-tb-pdf-print:visible');
-          if ($pdfPrint.length) { e.preventDefault(); $pdfPrint.first().trigger('click'); }
-          return;
-        }
-        if (e.key === 'f') {
-          var $fs = self.$fullscreenToggle.filter(':visible');
-          if ($fs.length) { e.preventDefault(); $fs.first().trigger('click'); }
-          return;
-        }
-        if (e.key === 't') {
-          var $theme = self.$themeToggle.filter(':visible');
-          if ($theme.length) { e.preventDefault(); $theme.first().trigger('click'); }
-          return;
-        }
-        if (e.key === 'c') {
-          var $carousel = self.$carouselToggle.filter(':visible');
-          if ($carousel.length) { e.preventDefault(); $carousel.first().trigger('click'); }
-          return;
-        }
-        if (e.key === 's') {
-          var $slide = self.$toolbar.find('.cv-slideshow-btn:visible');
-          if ($slide.length) { e.preventDefault(); $slide.first().trigger('click'); }
+        var keyShortcuts = { q: function() { return self.$stage.find('.cv-jp-hd:visible'); }, d: function() { return self.$toolbar.find('.cv-tb-download:visible'); }, p: function() { return self.$toolbar.find('.cv-tb-pdf-print:visible'); }, f: function() { return self.$fullscreenToggle.filter(':visible'); }, t: function() { return self.$themeToggle.filter(':visible'); }, c: function() { return self.$carouselToggle.filter(':visible'); }, s: function() { return self.$toolbar.find('.cv-slideshow-btn:visible'); } };
+        if (keyShortcuts[e.key]) {
+          var $btn = keyShortcuts[e.key]();
+          if ($btn.length) { e.preventDefault(); $btn.first().trigger('click'); }
           return;
         }
         var customKey = (e.key || '').toLowerCase();
-        var reserved = { escape: 1, arrowleft: 1, arrowright: 1, ' ': 1, m: 1, r: 1, q: 1, d: 1, p: 1, '?': 1, '+': 1, '-': 1, '=': 1, f: 1, t: 1, c: 1, s: 1 };
-        if (!reserved[customKey]) {
+        if (!RESERVED_SHORTCUT_KEYS[customKey]) {
           var selKey = customKey.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
           var $customBtn = self.$toolbar.find('.cv-tb-btn[data-cv-shortcut="' + selKey + '"]:visible');
           if ($customBtn.length) { e.preventDefault(); $customBtn.first().trigger('click'); }
@@ -873,7 +805,7 @@
       });
       this.$stageWrap.on('touchend touchcancel', function(e) {
         var rem = e.originalEvent.touches;
-        if (rem.length === 1 && self._zoom > 1 && !self._isGifItem()) {
+        if (rem.length === 1 && self._isImageItem && self._zoom > 1 && !self._isGifItem()) {
           self._isPanning = true;
           self._justEndedPinch = self._pinchStartDist > 0;
           self._panOriginX = rem[0].clientX;
@@ -984,26 +916,10 @@
     _applyTooltips: function(inst) {
       if (!inst || !this.$el.length) return;
       var show = inst.opts.canShowTooltip !== false;
-      var set = function($el, key) {
-        if (show) {
-          var text = str(inst, key);
-          $el.attr('data-cv-tooltip', text);
-        } else {
-          $el.removeAttr('data-cv-tooltip');
-        }
-      };
-      set(this.$el.find('.cv-close'), 'close');
-      set(this.$carouselToggle, 'attachments');
-      var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-      set(this.$fullscreenToggle, (fsEl === this.$el[0]) ? 'exitFullscreen' : 'fullscreen');
-      set(this.$themeToggle, (inst.opts.theme || 'dark') === 'dark' ? 'switchToLightMode' : 'switchToDarkMode');
-      set(this.$prev, 'previousItem');
-      set(this.$next, 'nextItem');
-      set(this.$carouselPrev, 'scrollCarouselLeft');
-      set(this.$carouselNext, 'scrollCarouselRight');
-      set(this.$el.find('.cv-zoom-out-btn'), 'zoomOut');
-      set(this.$zoomSlider, 'zoomLevel');
-      set(this.$el.find('.cv-zoom-in-btn'), 'zoomIn');
+      var set = function($el, key) { if (show) $el.attr('data-cv-tooltip', str(inst, key)); else $el.removeAttr('data-cv-tooltip'); };
+      var fsEl = getFullscreenElement();
+      var tips = [[this.$el.find('.cv-close'), 'close'], [this.$carouselToggle, 'attachments'], [this.$fullscreenToggle, fsEl === this.$el[0] ? 'exitFullscreen' : 'fullscreen'], [this.$themeToggle, (inst.opts.theme || 'dark') === 'dark' ? 'switchToLightMode' : 'switchToDarkMode'], [this.$prev, 'previousItem'], [this.$next, 'nextItem'], [this.$carouselPrev, 'scrollCarouselLeft'], [this.$carouselNext, 'scrollCarouselRight'], [this.$el.find('.cv-zoom-out-btn'), 'zoomOut'], [this.$zoomSlider, 'zoomLevel'], [this.$el.find('.cv-zoom-in-btn'), 'zoomIn']];
+      for (var i = 0; i < tips.length; i++) set(tips[i][0], tips[i][1]);
     },
 
     _nav: function(dir, useTransition) {
@@ -1012,7 +928,7 @@
       if (dir === 'prev') this.activeInstance.prev(opts); else this.activeInstance.next(opts);
     },
 
-    /* ── zoom helpers ──────────────────────────────────────────── */
+    /* zoom helpers */
     _zoomOpts: function() { return (this.activeInstance && this.activeInstance.opts.zoom) || DEFAULTS.zoom; },
     _isGifItem: function() {
       var inst = this.activeInstance;
@@ -1083,7 +999,7 @@
       return Math.sqrt(dx * dx + dy * dy);
     },
 
-    /* ── open / close ──────────────────────────────────────────── */
+    /* open / close */
     open: function(instance) {
       this.ensure();
       this.activeInstance = instance;
@@ -1308,7 +1224,7 @@
     },
 
     _syncFullscreenToggle: function() {
-      var el = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      var el = getFullscreenElement();
       var isOverlayFullscreen = (el === this.$el[0]);
       var inst = this.activeInstance;
       var key = isOverlayFullscreen ? 'exitFullscreen' : 'fullscreen';
@@ -1327,7 +1243,7 @@
 
     _toggleOverlayFullscreen: function() {
       var el = this.$el[0];
-      var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      var fsEl = getFullscreenElement();
       var isOurs = (fsEl === el);
       var self = this;
       if (fsEl && isOurs) {
@@ -1358,7 +1274,7 @@
       var inst = this.activeInstance, item = inst.items[inst.idx];
       var hadWcag = inst.opts.wcag;
       if (inst._slideshowTimer) { clearTimeout(inst._slideshowTimer); inst._slideshowTimer = null; }
-      var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      var fsEl = getFullscreenElement();
       if (fsEl === this.$el[0]) {
         if (document.exitFullscreen) document.exitFullscreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -1390,7 +1306,7 @@
       }, 300);
     },
 
-    /* ── core: load item ───────────────────────────────────────── */
+    /* load item */
     loadItem: function(opts) {
       var inst = this.activeInstance;
       if (!inst) return;
@@ -1463,7 +1379,7 @@
         } else if (type === 'pdf') {
           result = builtInPdfRenderer(item, this.$stage, inst);
         } else if (type === 'inline') {
-          result = builtInInlineRenderer(item, this.$stage);
+          result = builtInInlineRenderer(item, this.$stage, inst);
         } else if (type === 'markdown') {
           result = builtInMarkdownRenderer(item, this.$stage, inst);
         } else if (type === 'error') {
@@ -1476,6 +1392,18 @@
       /* 3. Unsupported fallback */
       if (this.$stage.children().length === 0) {
         builtInUnsupportedRenderer(item, this.$stage);
+      }
+
+      /* 3b. PDF: stretch body > stage-wrap > stage so .cv-pdf-main gets a bounded height and can scroll */
+      var $body = this.$el.find('.cv-body');
+      if (this._isPdfItem) {
+        $body.addClass('cv-body-pdf');
+        this.$stageWrap.addClass('cv-stage-wrap-pdf');
+        this.$stage.addClass('cv-stage-pdf');
+      } else {
+        $body.removeClass('cv-body-pdf');
+        this.$stageWrap.removeClass('cv-stage-wrap-pdf');
+        this.$stage.removeClass('cv-stage-pdf');
       }
 
       /* 4. Light-stage class so nav arrows are visible in dark mode (inline/markdown have white bg) */
@@ -1517,6 +1445,7 @@
       }
 
       inst._currentResult = result || {};
+      if (type === 'inline' && result && result.inlineContent != null) inst._inlineContent = result.inlineContent;
 
       /* 5. Resolve toolbar */
       this._resolveToolbar(inst, result || {});
@@ -1645,7 +1574,7 @@
       };
     },
 
-    /* ── toolbar resolution ────────────────────────────────────── */
+    /* toolbar resolution */
     _resolveToolbar: function(inst, result) {
       if (this._isHtmlItem) {
         this.$zoomWidget.hide();
@@ -1715,13 +1644,69 @@
           items.unshift(slideBtn);
         }
 
+        var currentType = (inst.items[inst.idx] && inst.items[inst.idx].type) || '';
+        var self = this;
+
+        /* Inline and Markdown: Copy button (icon only; label in tooltip) — copy content to clipboard, show "Copied to clipboard" in tooltip */
+        if (currentType === 'inline' || currentType === 'markdown') {
+          if (items.length > 0) items.push('separator');
+          items.push({
+            id: 'copy',
+            icon: Icons.copy,
+            label: str(inst, 'copy'),
+            showLabel: false,
+            className: 'cv-tb-copy',
+            onClick: function() {
+              var content = currentType === 'inline' ? inst._inlineContent : inst._markdownRaw;
+              if (content != null) copyTextToClipboard(content, inst);
+            }
+          });
+        }
+
+        /* Markdown: toggle raw/source view when markdown.toggleRawView is true */
+        var mdOpts = inst.opts.markdown;
+        if (currentType === 'markdown' && mdOpts && mdOpts.toggleRawView) {
+          if (inst._markdownViewMode == null) inst._markdownViewMode = 'rendered';
+          if (items.length > 0) items.push('separator');
+          items.push({
+            id: 'markdown-toggle',
+            icon: Icons.extractText,
+            label: inst._markdownViewMode === 'rendered' ? str(inst, 'viewSource') : str(inst, 'viewMarkdown'),
+            showLabel: false,
+            className: 'cv-tb-markdown-toggle',
+            onClick: function() {
+              if (inst._markdownViewMode === 'rendered') {
+                if (inst._markdownRaw != null) {
+                  self.$stage.empty().append(
+                    $('<div class="cv-inline-wrap"><div class="cv-inline-body">' + inlineRawToHtml(inst._markdownRaw) + '</div></div>')
+                  );
+                  inst._markdownViewMode = 'raw';
+                }
+              } else {
+                if (inst._markdownHtml != null) {
+                  self.$stage.empty().append($('<div class="cv-markdown-body"></div>').html(inst._markdownHtml));
+                  inst._markdownViewMode = 'rendered';
+                }
+              }
+              var $btn = self.$toolbar.find('.cv-tb-markdown-toggle');
+              if ($btn.length && inst.opts.canShowTooltip !== false) {
+                var lbl = inst._markdownViewMode === 'rendered' ? str(inst, 'viewSource') : str(inst, 'viewMarkdown');
+                $btn.attr('data-cv-tooltip', lbl);
+              }
+            }
+          });
+        }
+
         /* onToolbar callback — let customer modify */
         if (typeof inst.opts.onToolbar === 'function') {
           var modified = inst.opts.onToolbar(inst.items[inst.idx], items.slice(), inst);
           if ($.isArray(modified)) items = modified;
         }
 
-        this._buildToolbar(inst, items, tbOpts.download !== false);
+        /* Show download button only if toolbar.download is enabled and item has a download URL (from itemData) */
+        var ci = inst.items[inst.idx];
+        var showDownload = (tbOpts.download !== false) && getItemDownloadUrl(ci);
+        this._buildToolbar(inst, items, showDownload);
       }
 
       var hasContent = this.$toolbar.children().length > 0 || showZoom;
@@ -1798,19 +1783,15 @@
         var $dl = $('<button class="cv-tb-btn cv-tb-download" type="button"' + dlTitle + '>' + Icons.download + '</button>');
         $dl.on('click', function(e) {
           e.preventDefault();
-          var ci = inst.items[inst.idx];
-          if (typeof inst.opts.onDownload === 'function') {
-            inst.opts.onDownload(ci, inst);
-          } else {
-            var url = ci.downloadUrl || ci.src;
-            if (!url || !isSafeDownloadUrl(url)) return;
-            var a = document.createElement('a');
-            a.href = url; a.download = safeDownloadFilename(ci.title); a.target = '_blank';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          }
+          performDownload(inst.items[inst.idx], inst);
         });
         $tb.append($dl);
       }
+    },
+
+    _isToolbarBtnVisible: function(sel) {
+      var $b = this.$toolbar.find(sel);
+      return $b.length && $b.is(':visible');
     },
 
     _getShortcutsList: function(inst) {
@@ -1833,9 +1814,7 @@
         list.push({ key: '+', label: str(inst, 'zoomIn') });
         list.push({ key: '-', label: str(inst, 'zoomOut') });
       }
-      if (this.$toolbar.find('.cv-tb-pdf-print').length && this.$toolbar.find('.cv-tb-pdf-print').is(':visible')) {
-        list.push({ key: 'p', label: str(inst, 'print') });
-      }
+      if (this._isToolbarBtnVisible('.cv-tb-pdf-print')) list.push({ key: 'p', label: str(inst, 'print') });
       var hasBuiltInMedia = !this._isCustomRendered && this.$stage.find('.jp-play, .jp-pause, .jp-mute, .jp-unmute, .cv-native-video, .cv-native-audio').length > 0;
       if (hasBuiltInMedia) {
         list.push({ key: ' ', label: str(inst, 'playPause') });
@@ -1845,11 +1824,9 @@
       if (this.$stage.find('.cv-jp-hd').length) {
         list.push({ key: 'q', label: str(inst, 'toggleHd') });
       }
-      if (this.$toolbar.find('.cv-tb-download').length && this.$toolbar.find('.cv-tb-download').is(':visible')) {
-        list.push({ key: 'd', label: str(inst, 'download') });
-      }
+      if (this._isToolbarBtnVisible('.cv-tb-download')) list.push({ key: 'd', label: str(inst, 'download') });
       if (opts.fullscreen !== false && this.$fullscreenToggle.length && this.$fullscreenToggle.is(':visible')) {
-        var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        var fsEl = getFullscreenElement();
         list.push({ key: 'f', label: fsEl === this.$el[0] ? str(inst, 'exitFullscreen') : str(inst, 'fullscreen') });
       }
       if (opts.themeToggle !== false && this.$themeToggle.length && this.$themeToggle.is(':visible')) {
@@ -1861,7 +1838,6 @@
       if (opts.slideshow && opts.slideshow.enabled && inst.items.length > 1 && this.$toolbar.find('.cv-slideshow-btn').length) {
         list.push({ key: 's', label: str(inst, 'toggleSlideshow') });
       }
-      var reservedKeys = { escape: 1, arrowleft: 1, arrowright: 1, ' ': 1, m: 1, r: 1, q: 1, d: 1, p: 1, '?': 1, '+': 1, '-': 1, '=': 1, f: 1, t: 1, c: 1, s: 1 };
       var items = this._resolvedToolbarItems || [];
       for (var i = 0; i < items.length; i++) {
         var tbItem = items[i];
@@ -1872,7 +1848,7 @@
         else if (tbItem.visible === false) isVisible = false;
         if (!isVisible) continue;
         var sk = String(tbItem.shortcutKey).toLowerCase().charAt(0);
-        if (sk && !reservedKeys[sk]) list.push({ key: sk, label: tbItem.label || (tbItem.id ? String(tbItem.id) : sk) });
+        if (sk && !RESERVED_SHORTCUT_KEYS[sk]) list.push({ key: sk, label: tbItem.label || (tbItem.id ? String(tbItem.id) : sk) });
       }
       if (opts.shortcutsPopup !== false) {
         list.push({ key: '?', label: str(inst, 'showShortcuts') });
@@ -1899,6 +1875,20 @@
         clearTimeout(t1);
         $el.remove();
       }, 1300);
+    },
+
+    _showStripMessage: function(text) {
+      if (!this.$stripMessage || !this.$stripMessage.length) return;
+      if (this._stripMessageTimer) {
+        clearTimeout(this._stripMessageTimer);
+        this._stripMessageTimer = null;
+      }
+      this.$stripMessage.text(text).addClass('cv-strip-visible');
+      var self = this;
+      this._stripMessageTimer = setTimeout(function() {
+        self.$stripMessage.removeClass('cv-strip-visible');
+        self._stripMessageTimer = null;
+      }, 2000);
     },
 
     _shortcutKeyDisplay: function(key) {
@@ -2021,17 +2011,14 @@
     }
   };
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: IMAGE
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: IMAGE --- */
 
   function builtInImageRenderer(item, $stage) {
     if (!item.src || !isSafeResourceUrl(item.src)) {
-      builtInErrorCard($stage, 'Invalid or unsafe image URL', item, { noDownload: true });
+      showError($stage, 'image', 'Invalid or unsafe image URL', item, { noDownload: true });
       return { imageError: true };
     }
     var inst = Overlay.activeInstance;
-    var hasValidDownloadUrl = (item.downloadUrl || item.src) && isSafeDownloadUrl(item.downloadUrl || item.src);
     var $wrap = $('<div class="cv-img-wrap"></div>');
     Overlay.$loader.addClass('cv-active');
     var altText = (item.title != null && String(item.title).trim() !== '') ? String(item.title) : '';
@@ -2047,7 +2034,7 @@
       Overlay.$loader.removeClass('cv-active');
       $wrap.remove();
       $stage.empty();
-      builtInErrorCard($stage, 'Image could not be loaded', item, { noDownload: !hasValidDownloadUrl });
+      showError($stage, 'image', 'Image could not be loaded', item, { noDownload: !getItemDownloadUrl(item) });
       if (inst) Overlay._resolveToolbar(inst, { imageError: true });
     };
     img.src = item.src;
@@ -2056,9 +2043,7 @@
     return {};
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: VIDEO (jPlayer)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: VIDEO (jPlayer) --- */
 
   function builtInVideoNativeRenderer(item, $stage) {
     if (!isSafeResourceUrl(item.src)) return null;
@@ -2218,7 +2203,7 @@
     var wrapEl = $wrap[0];
 
     function onFullscreenChange() {
-      var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      var fsEl = getFullscreenElement();
       var isVideoFullscreen = (fsEl === wrapEl);
       $fullscreenBtn.toggle(!isVideoFullscreen);
       $restoreBtn.toggle(isVideoFullscreen);
@@ -2301,9 +2286,7 @@
     };
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: AUDIO (jPlayer)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: AUDIO (jPlayer) --- */
 
   function builtInAudioNativeRenderer(item, $stage) {
     if (!isSafeResourceUrl(item.src)) return null;
@@ -2417,9 +2400,7 @@
     };
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: PDF (pdf.js)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: PDF (pdf.js) --- */
 
   function builtInPdfIframeRenderer(item, $stage) {
     if (!isSafeResourceUrl(item.src)) return null;
@@ -2438,18 +2419,22 @@
     var pdfOpts = inst.opts.pdf || {};
     var showAnnotations = pdfOpts.annotations !== false;
     var useAutoFit = pdfOpts.autoFit !== false;
+    var minScale = (typeof pdfOpts.autoFitMinScale === 'number' ? pdfOpts.autoFitMinScale : 0.75);
     var maxScale = (typeof pdfOpts.autoFitMaxScale === 'number' ? pdfOpts.autoFitMaxScale : 2.5);
+    var enableTextLayer = pdfOpts.textLayer !== false;
+    var onPrint = typeof pdfOpts.onPrint === 'function' ? pdfOpts.onPrint : null;
 
     var $container = $(
       '<div class="cv-pdf-wrap">' +
         '<div class="cv-pdf-sidebar" style="display:none"><div class="cv-pdf-thumbs"></div></div>' +
-        '<div class="cv-pdf-main"><div class="cv-pdf-canvas-wrap"></div></div>' +
+        '<div class="cv-pdf-main"><div class="cv-pdf-main-inner"><div class="cv-pdf-canvas-wrap"></div></div></div>' +
       '</div>'
     );
 
     var $sidebar = $container.find('.cv-pdf-sidebar');
     var $thumbs  = $container.find('.cv-pdf-thumbs');
     var $main = $container.find('.cv-pdf-main');
+    var $mainInner = $container.find('.cv-pdf-main-inner');
     var $canvasWrap = $container.find('.cv-pdf-canvas-wrap');
 
     var pdfDoc = null, pageNum = 1, totalPages = 0;
@@ -2457,6 +2442,33 @@
     var rendering = false;
     var pdfResizeTid = null;
     var scrollTid = null;
+    var textLayerVisible = false;
+    var $zoomSelect = null;
+    var zoomPresetsPct = [50, 75, 100, 125, 150, 175, 200, 225, 250];
+    var $pageInfo = null;
+    var pageEditing = false;
+
+    function clampPdfScale(s) { return Math.max(0.25, Math.min(5, s)); }
+    function nearestPresetPct(scale) {
+      var pct = Math.round(scale * 100);
+      var best = zoomPresetsPct[0], bestD = Math.abs(pct - best);
+      for (var i = 1; i < zoomPresetsPct.length; i++) {
+        var d = Math.abs(pct - zoomPresetsPct[i]);
+        if (d < bestD) { bestD = d; best = zoomPresetsPct[i]; }
+      }
+      return best;
+    }
+    function syncZoomSelect() {
+      if (!$zoomSelect || !$zoomSelect.length) return;
+      if (useAutoFit) { $zoomSelect.val('autofit'); return; }
+      $zoomSelect.val(String(nearestPresetPct(pdfScale)));
+    }
+    function setPdfScaleManual(nextScale) {
+      useAutoFit = false;
+      pdfScale = clampPdfScale(nextScale);
+      renderAllPages();
+      syncZoomSelect();
+    }
 
     function applyAutoFitScale() {
       if (!useAutoFit || !pdfDoc) return;
@@ -2464,9 +2476,11 @@
       pdfDoc.getPage(1).then(function(page) {
         var vp1 = page.getViewport({ scale: 1, rotation: rotation });
         if (size.w > 0 && size.h > 0) {
-          pdfScale = Math.max(0.25, Math.min(size.w / vp1.width, size.h / vp1.height, maxScale));
+          var fitScale = Math.min(size.w / vp1.width, size.h / vp1.height);
+          pdfScale = Math.max(minScale, Math.min(fitScale, maxScale));
         }
         renderAllPages();
+        syncZoomSelect();
       });
     }
 
@@ -2493,7 +2507,7 @@
       }
       if (pageNum !== best) {
         pageNum = best;
-        if ($pageInfo) $pageInfo.text(pageNum + ' / ' + totalPages);
+        updatePageInfoDisplay();
         $thumbs.find('.cv-pdf-thumb').removeClass('cv-active');
         $thumbs.find('[data-page="' + pageNum + '"]').addClass('cv-active');
       }
@@ -2517,6 +2531,9 @@
         var renderPromise = renderTask.promise || renderTask;
         renderPromise.then(function() {
           if (showAnnotations) renderAnnotations(page, vp, $pageWrap);
+          if (enableTextLayer && textLayerVisible && typeof page.getTextContent === 'function') {
+            page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pageWrap); });
+          }
           if (done) done();
         });
       });
@@ -2531,7 +2548,7 @@
         idx++;
         if (idx > totalPages) {
           rendering = false;
-          if ($pageInfo) $pageInfo.text(pageNum + ' / ' + totalPages);
+          updatePageInfoDisplay();
           $main.off('scroll.cv-pdf-page').on('scroll.cv-pdf-page', function() {
             clearTimeout(scrollTid);
             scrollTid = setTimeout(updateCurrentPageFromScroll, 80);
@@ -2567,8 +2584,11 @@
         var renderPromise = renderTask.promise || renderTask;
         renderPromise.then(function() {
           if (showAnnotations) renderAnnotations(page, vp, $pageWrap);
+          if (enableTextLayer && textLayerVisible && typeof page.getTextContent === 'function') {
+            page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pageWrap); });
+          }
           rendering = false;
-          if ($pageInfo) $pageInfo.text(pageNum + ' / ' + totalPages);
+          updatePageInfoDisplay();
         });
       });
     }
@@ -2577,6 +2597,59 @@
       if (!r || r.length < 4) return [0, 0, 0, 0];
       var x1 = r[0], y1 = r[1], x2 = r[2], y2 = r[3];
       return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+    }
+
+    function multiplyTransform(m1, m2) {
+      if (!m1 || m1.length < 6 || !m2 || m2.length < 6) return m2 || m1;
+      return [
+        m1[0] * m2[0] + m1[2] * m2[1],
+        m1[1] * m2[0] + m1[3] * m2[1],
+        m1[0] * m2[2] + m1[2] * m2[3],
+        m1[1] * m2[2] + m1[3] * m2[3],
+        m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+        m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
+      ];
+    }
+
+    function renderTextLayerForPage(textContent, viewport, $pageWrap) {
+      if (!textContent || !textContent.items || !viewport) return;
+      var Util = (typeof pdfjsLib !== 'undefined' && pdfjsLib.Util && typeof pdfjsLib.Util.transform === 'function') ? pdfjsLib.Util : null;
+      var vpTransform = viewport.transform;
+      if (!vpTransform || vpTransform.length < 6) vpTransform = [1, 0, 0, 1, 0, 0];
+      var $layer = $('<div class="cv-pdf-text-layer"></div>');
+      $layer.css({ position: 'absolute', left: 0, top: 0, width: viewport.width + 'px', height: viewport.height + 'px', overflow: 'hidden', pointerEvents: 'auto', userSelect: 'text', WebkitUserSelect: 'text' });
+      var items = textContent.items;
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var str = (item && item.str != null) ? String(item.str) : '';
+        var t = (item && item.transform != null && item.transform.length >= 6) ? item.transform : [1, 0, 0, 1, 0, 0];
+        var tx = Util ? Util.transform(vpTransform, t) : multiplyTransform(vpTransform, t);
+        var left = tx[4];
+        var fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]) || 12;
+        var top = tx[5] - fontHeight;
+        var span = document.createElement('span');
+        span.className = 'cv-pdf-text-span';
+        span.style.cssText = 'position:absolute;left:' + left + 'px;top:' + top + 'px;font-size:' + fontHeight + 'px;line-height:1.15;white-space:pre;pointer-events:auto;';
+        span.textContent = str;
+        $layer[0].appendChild(span);
+      }
+      var $ann = $pageWrap.find('.cv-pdf-annotations');
+      if ($ann.length) $ann.before($layer);
+      else $pageWrap.append($layer);
+    }
+
+    function renderTextLayerForAllPages() {
+      if (!pdfDoc || typeof pdfDoc.getPage !== 'function') return;
+      $canvasWrap.find('.cv-pdf-page').each(function() {
+        var $pw = $(this);
+        var num = parseInt($pw.attr('data-page'), 10);
+        if (!num) return;
+        pdfDoc.getPage(num).then(function(page) {
+          var vp = page.getViewport({ scale: pdfScale, rotation: rotation });
+          if (typeof page.getTextContent !== 'function') return;
+          page.getTextContent().then(function(tc) { renderTextLayerForPage(tc, vp, $pw); });
+        });
+      });
     }
 
     function renderAnnotations(page, viewport, $pageWrap) {
@@ -2648,10 +2721,18 @@
       });
     }
 
+    function updatePageInfoDisplay() {
+      if (!$pageInfo || pageEditing) return;
+      var $cur = $pageInfo.find('.cv-pdf-page-current');
+      var $tot = $pageInfo.find('.cv-pdf-page-total');
+      if ($cur.length) $cur.text(pageNum);
+      if ($tot.length) $tot.text(totalPages || '-');
+    }
     function goToPage(num) {
-      if (num < 1 || num > totalPages) return;
+      if (totalPages < 1) return;
+      num = Math.max(1, Math.min(totalPages, num));
       pageNum = num;
-      if ($pageInfo) $pageInfo.text(pageNum + ' / ' + totalPages);
+      updatePageInfoDisplay();
       $thumbs.find('.cv-pdf-thumb').removeClass('cv-active');
       $thumbs.find('[data-page="' + pageNum + '"]').addClass('cv-active');
       var $pageEl = $canvasWrap.find('.cv-pdf-page[data-page="' + num + '"]');
@@ -2693,12 +2774,14 @@
         pdf.getPage(1).then(function(fp) {
           var vp = fp.getViewport({ scale: 1 });
           if (useAutoFit && wrapW > 0 && wrapH > 0) {
-            pdfScale = Math.max(0.25, Math.min(wrapW / vp.width, wrapH / vp.height, maxScale));
+            var fitScale = Math.min(wrapW / vp.width, wrapH / vp.height);
+            pdfScale = Math.max(minScale, Math.min(fitScale, maxScale));
           } else if (!useAutoFit && wrapW > 0) {
             pdfScale = Math.max(0.25, Math.min(wrapW / vp.width, maxScale));
           } else {
             pdfScale = Math.min(1, maxScale);
           }
+          syncZoomSelect();
           renderAllPages(function() {
             for (var i = 1; i <= totalPages; i++) buildThumbnail(i);
           });
@@ -2717,7 +2800,7 @@
       });
     }, function() {
       Overlay.$loader.removeClass('cv-active');
-      builtInErrorCard($stage, 'PDF could not be loaded', item);
+      showError($stage, 'pdf', 'PDF could not be loaded', item);
     });
 
     $stage.append($container);
@@ -2734,7 +2817,38 @@
     $tbPrev.on('click', function() { goToPage(pageNum - 1); });
     toolbarItems.push($tbPrev[0]);
 
-    var $pageInfo = $('<span class="cv-pdf-page-info">1 / -</span>');
+    $pageInfo = $('<span class="cv-pdf-page-info"><span class="cv-pdf-page-current">1</span> / <span class="cv-pdf-page-total">-</span></span>');
+    $pageInfo.on('click', function() {
+      if (pageEditing) return;
+      pageEditing = true;
+      var cur = String(pageNum || 1);
+      var $input = $('<input class="cv-pdf-page-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" />');
+      $input.val(cur);
+      $pageInfo.find('.cv-pdf-page-current').replaceWith($input);
+      $input[0].focus();
+      $input[0].select();
+
+      function restoreDisplay() {
+        var $cur = $('<span class="cv-pdf-page-current"></span>').text(pageNum);
+        $input.replaceWith($cur);
+        $pageInfo.find('.cv-pdf-page-total').text(totalPages || '-');
+        pageEditing = false;
+      }
+      function commit() {
+        var raw = String($input.val() || '').trim();
+        var n = parseInt(raw, 10);
+        if (isNaN(n)) { restoreDisplay(); return; }
+        n = Math.max(1, Math.min(totalPages || 1, n));
+        restoreDisplay();
+        if (totalPages) goToPage(n);
+      }
+
+      $input.on('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { e.preventDefault(); restoreDisplay(); }
+      });
+      $input.on('blur', function() { commit(); });
+    });
     toolbarItems.push($pageInfo[0]);
 
     var $tbNext = $('<button class="cv-tb-btn"' + tipAttr('nextPage') + ariaAttr('nextPage') + '>' + Icons.nextPage + '</button>');
@@ -2744,27 +2858,68 @@
     toolbarItems.push('separator');
 
     var $tbZoomOut = $('<button class="cv-tb-btn cv-tb-pdf-zoom-out"' + tipAttr('zoomOut') + ariaAttr('zoomOut') + '>' + Icons.zoomOut + '</button>');
-    $tbZoomOut.on('click', function() { pdfScale = Math.max(0.25, pdfScale - 0.25); renderAllPages(); });
+    $tbZoomOut.on('click', function() { setPdfScaleManual(pdfScale - 0.25); });
     toolbarItems.push($tbZoomOut[0]);
 
+    $zoomSelect = $('<select class="cv-pdf-zoom-select"' + ariaAttr('zoom') + '></select>');
+    $zoomSelect.append('<option value="autofit">Auto Fit</option>');
+    for (var zi = 0; zi < zoomPresetsPct.length; zi++) {
+      var zp = zoomPresetsPct[zi];
+      $zoomSelect.append('<option value="' + zp + '">' + zp + '%</option>');
+    }
+    $zoomSelect.on('change', function() {
+      var v = String($(this).val() || '');
+      if (v === 'autofit') {
+        useAutoFit = true;
+        applyAutoFitScale();
+        syncZoomSelect();
+        return;
+      }
+      var pct = parseInt(v, 10);
+      if (!isNaN(pct) && pct > 0) setPdfScaleManual(pct / 100);
+    });
+    syncZoomSelect();
+    toolbarItems.push($zoomSelect[0]);
+
     var $tbZoomIn = $('<button class="cv-tb-btn cv-tb-pdf-zoom-in"' + tipAttr('zoomIn') + ariaAttr('zoomIn') + '>' + Icons.zoomIn + '</button>');
-    $tbZoomIn.on('click', function() { pdfScale = Math.min(5, pdfScale + 0.25); renderAllPages(); });
+    $tbZoomIn.on('click', function() { setPdfScaleManual(pdfScale + 0.25); });
     toolbarItems.push($tbZoomIn[0]);
 
     var $tbRotate = $('<button class="cv-tb-btn"' + tipAttr('rotate') + ariaAttr('rotate') + '>' + Icons.rotateCw + '</button>');
     $tbRotate.on('click', function() { rotation = (rotation + 90) % 360; renderAllPages(); });
     toolbarItems.push($tbRotate[0]);
 
-    var $tbPrint = $('<button class="cv-tb-btn cv-tb-pdf-print"' + tipAttr('print') + ariaAttr('print') + '>' + Icons.print + '</button>');
-    $tbPrint.on('click', function() {
+    function defaultPrint() {
       var $page = $canvasWrap.find('.cv-pdf-page[data-page="' + pageNum + '"]');
       var canvas = $page.length ? $page.find('canvas')[0] : $canvasWrap.find('canvas')[0];
       if (!canvas) return;
       var win = window.open('');
       var dataUrl = canvas.toDataURL().replace(/"/g, '&quot;');
       win.document.write('<img src="' + dataUrl + '" onload="window.print();window.close();" />');
+    }
+    var $tbPrint = $('<button class="cv-tb-btn cv-tb-pdf-print"' + tipAttr('print') + ariaAttr('print') + '>' + Icons.print + '</button>');
+    $tbPrint.on('click', function() {
+      if (onPrint) {
+        onPrint({ item: item, pdfDoc: pdfDoc, pageNum: pageNum, totalPages: totalPages, $canvasWrap: $canvasWrap, defaultPrint: defaultPrint });
+        return;
+      }
+      defaultPrint();
     });
     toolbarItems.push($tbPrint[0]);
+
+    if (enableTextLayer) {
+      var $tbExtract = $('<button class="cv-tb-btn cv-tb-pdf-extract"' + tipAttr('extractText') + ariaAttr('extractText') + '>' + Icons.extractText + '</button>');
+      $tbExtract.on('click', function() {
+        textLayerVisible = !textLayerVisible;
+        if (textLayerVisible) {
+          renderTextLayerForAllPages();
+        } else {
+          $canvasWrap.find('.cv-pdf-text-layer').remove();
+        }
+        $(this).toggleClass('cv-active', textLayerVisible);
+      });
+      toolbarItems.push($tbExtract[0]);
+    }
 
     return {
       toolbar: toolbarItems,
@@ -2792,27 +2947,25 @@
     return s;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: INLINE (source code: js, jsp, java, etc.)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: INLINE --- */
 
-  function builtInInlineRenderer(item, $stage) {
-    function renderContent(text) {
-      var lines = (text == null ? '' : String(text)).split(/\r\n|\n|\r/);
-      var html = '';
-      for (var i = 0; i < lines.length; i++) {
-        html += '<div class="cv-inline-line">' +
-          '<span class="cv-inline-num">' + (i + 1) + '</span>' +
-          '<span class="cv-inline-code">' + escHtml(lines[i]) + '</span>' +
-          '</div>';
-      }
-      return html;
+  function inlineRawToHtml(text) {
+    var lines = (text == null ? '' : String(text)).split(/\r\n|\n|\r/);
+    var html = '';
+    for (var i = 0; i < lines.length; i++) {
+      html += '<div class="cv-inline-line">' +
+        '<span class="cv-inline-num">' + (i + 1) + '</span>' +
+        '<span class="cv-inline-code">' + escHtml(lines[i]) + '</span>' +
+        '</div>';
     }
+    return html;
+  }
 
+  function builtInInlineRenderer(item, $stage, inst) {
     function showInline(content) {
       var $wrap = $(
         '<div class="cv-inline-wrap">' +
-          '<div class="cv-inline-body">' + renderContent(content) + '</div>' +
+          '<div class="cv-inline-body">' + inlineRawToHtml(content) + '</div>' +
         '</div>'
       );
       $stage.append($wrap);
@@ -2820,7 +2973,7 @@
 
     if (item.content != null && typeof item.content === 'string') {
       showInline(item.content);
-      return {};
+      return { inlineContent: item.content };
     }
     if (item.src && isSafeResourceUrl(item.src)) {
       var $placeholder = $('<div class="cv-inline-wrap"><div class="cv-inline-loading"><div class="cv-inline-spinner"></div></div></div>');
@@ -2828,55 +2981,30 @@
       fetch(item.src, { method: 'GET' })
         .then(function(r) { return r.text(); })
         .then(function(text) {
-          $placeholder.find('.cv-inline-loading').replaceWith($('<div class="cv-inline-body">').html(renderContent(text)));
+          if (inst) inst._inlineContent = text;
+          $placeholder.find('.cv-inline-loading').replaceWith($('<div class="cv-inline-body">').html(inlineRawToHtml(text)));
         })
         .catch(function() {
           $placeholder.remove();
-          builtInErrorCard($stage, 'Could not load file for inline view', item);
+          showError($stage, 'inline', 'Could not load file for inline view', item);
         });
       return {};
     }
-    builtInErrorCard($stage, 'No content or invalid URL for inline view', item);
+    showError($stage, 'inline', 'No content or invalid URL for inline view', item);
     return null;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: UNSUPPORTED
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: UNSUPPORTED / ERROR --- */
 
-  function builtInUnsupportedRenderer(item, $stage) {
-    var ext  = (item.fileExt || (item.title || '').split('.').pop() || '').toUpperCase();
-    var size = item.fileSize || '';
-    var $card = $(
-      '<div class="cv-unsupported">' +
-        '<div class="cv-unsupported-icon">' + Icons.fileIcon + '</div>' +
-        (ext ? '<div class="cv-unsupported-ext">' + escHtml(ext) + '</div>' : '') +
-        '<div class="cv-unsupported-name">' + escHtml(item.title || 'File') + '</div>' +
-        (size ? '<div class="cv-unsupported-size">' + escHtml(size) + '</div>' : '') +
-        '<p class="cv-unsupported-msg">Preview is not available for this file</p>' +
-        (item.src || item.downloadUrl
-          ? '<button class="cv-unsupported-dl" type="button">' + Icons.download + ' Download</button>' : '') +
-      '</div>'
-    );
-    $card.find('.cv-unsupported-dl').on('click', function() {
-      var url = item.downloadUrl || item.src; if (!url || !isSafeDownloadUrl(url)) return;
-      var a = document.createElement('a');
-      a.href = url; a.download = safeDownloadFilename(item.title); a.target = '_blank';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    });
-    $stage.append($card);
+  function getErrorMessage(item) {
+    var m = (item.message != null && item.message !== '') ? item.message : (item.errorMessage != null && item.errorMessage !== '') ? item.errorMessage : null;
+    return m != null ? String(m) : 'Preview is not available for this file';
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: ERROR (type "error" — cannot preview; same template as unsupported, onRender can override)
-     ═══════════════════════════════════════════════════════════════════ */
-
-  function builtInErrorRenderer(item, $stage) {
-    var message = (item.message != null && item.message !== '') ? String(item.message)
-      : (item.errorMessage != null && item.errorMessage !== '') ? String(item.errorMessage)
-      : 'Preview is not available for this file';
+  function buildUnsupportedCard(item, message, $stage) {
     var ext = (item.fileExt || (item.title || '').split('.').pop() || '').toUpperCase();
     var size = item.fileSize || '';
+    var showDl = !!(item.src || item.downloadUrl);
     var $card = $(
       '<div class="cv-unsupported">' +
         '<div class="cv-unsupported-icon">' + Icons.fileIcon + '</div>' +
@@ -2884,28 +3012,28 @@
         '<div class="cv-unsupported-name">' + escHtml(item.title || 'File') + '</div>' +
         (size ? '<div class="cv-unsupported-size">' + escHtml(size) + '</div>' : '') +
         '<p class="cv-unsupported-msg">' + escHtml(message) + '</p>' +
-        (item.src || item.downloadUrl
-          ? '<button class="cv-unsupported-dl" type="button">' + Icons.download + ' Download</button>' : '') +
+        (showDl ? '<button class="cv-unsupported-dl" type="button">' + Icons.download + ' Download</button>' : '') +
       '</div>'
     );
-    $card.find('.cv-unsupported-dl').on('click', function() {
-      var url = item.downloadUrl || item.src; if (!url || !isSafeDownloadUrl(url)) return;
-      var a = document.createElement('a');
-      a.href = url; a.download = safeDownloadFilename(item.title); a.target = '_blank';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    });
+    if (showDl) $card.find('.cv-unsupported-dl').on('click', function() { performDownload(item, Overlay.activeInstance); });
     $stage.append($card);
+  }
+
+  function builtInUnsupportedRenderer(item, $stage) {
+    buildUnsupportedCard(item, 'Preview is not available for this file', $stage);
+  }
+
+  function builtInErrorRenderer(item, $stage) {
+    buildUnsupportedCard(item, getErrorMessage(item), $stage);
     return {};
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: HTML (user-provided HTML; no toolbar, no download)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: HTML --- */
 
   function builtInHtmlRenderer(item, $stage) {
     var html = item.html;
     if (html == null || (typeof html === 'string' && String(html).trim() === '')) {
-      builtInErrorCard($stage, 'No HTML provided for html view', item);
+      showError($stage, 'html', 'No HTML provided for html view', item);
       return null;
     }
     Overlay.$loader.addClass('cv-active');
@@ -2917,16 +3045,14 @@
       $stage.append(html);
     } else {
       Overlay.$loader.removeClass('cv-active');
-      builtInErrorCard($stage, 'No HTML provided for html view', item);
+      showError($stage, 'html', 'No HTML provided for html view', item);
       return null;
     }
     setTimeout(function() { Overlay.$loader.removeClass('cv-active'); }, 120);
     return {};
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     BUILT-IN: MARKDOWN (render .md as HTML; content or fetch from src)
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- BUILT-IN: MARKDOWN --- */
 
   function builtInMarkdownRenderer(item, $stage, inst) {
     function getMarkdownRenderer() {
@@ -2943,7 +3069,14 @@
 
     if (item.content != null && typeof item.content === 'string') {
       var renderer = getMarkdownRenderer();
-      showMarkdown(renderer(item.content));
+      var raw = item.content;
+      var html = renderer(raw);
+      if (inst) {
+        inst._markdownRaw = raw;
+        inst._markdownHtml = html;
+        inst._markdownViewMode = 'rendered';
+      }
+      showMarkdown(html);
       return {};
     }
     if (item.src && isSafeResourceUrl(item.src)) {
@@ -2952,6 +3085,11 @@
         try {
           fetchUrl = new URL(fetchUrl, window.location.href).href;
         } catch (e) {}
+      }
+      if (inst) {
+        inst._markdownViewMode = 'rendered';
+        inst._markdownRaw = null;
+        inst._markdownHtml = null;
       }
       Overlay.$loader.addClass('cv-active');
       var $placeholder = $('<div class="cv-markdown-body"><div class="cv-inline-loading"><div class="cv-inline-spinner"></div></div></div>');
@@ -2963,23 +3101,38 @@
         })
         .then(function(text) {
           var renderer = getMarkdownRenderer();
-          $placeholder.html(renderer(text));
+          var html = renderer(text);
+          if (inst) {
+            inst._markdownRaw = text;
+            inst._markdownHtml = html;
+          }
+          $placeholder.html(html);
           Overlay.$loader.removeClass('cv-active');
         })
         .catch(function() {
           $placeholder.remove();
           Overlay.$loader.removeClass('cv-active');
-          builtInErrorCard($stage, 'Could not load file for markdown view', item);
+          showError($stage, 'markdown', 'Could not load file for markdown view', item);
         });
       return {};
     }
-    builtInErrorCard($stage, 'No content or invalid URL for markdown view', item);
+    showError($stage, 'markdown', 'No content or invalid URL for markdown view', item);
     return null;
+  }
+
+  function showError($stage, type, message, item, options) {
+    options = options || {};
+    var inst = Overlay.activeInstance;
+    if (inst && typeof inst.opts.onError === 'function') {
+      var handled = inst.opts.onError({ type: type, message: message, item: item, $stage: $stage });
+      if (handled === true) return;
+    }
+    builtInErrorCard($stage, message, item, options);
   }
 
   function builtInErrorCard($stage, message, item, options) {
     options = options || {};
-    var showDl = !options.noDownload && (item.src || item.downloadUrl);
+    var showDl = !options.noDownload && getItemDownloadUrl(item);
     var $card = $(
       '<div class="cv-error-card">' + Icons.error +
         '<p class="cv-error-text">' + escHtml(message) + '</p>' +
@@ -2988,18 +3141,13 @@
     );
     if (showDl) {
       $card.find('.cv-error-dl').on('click', function() {
-        var url = item.downloadUrl || item.src; if (!url || !isSafeDownloadUrl(url)) return;
-        var a = document.createElement('a');
-        a.href = url; a.download = safeDownloadFilename(item.title); a.target = '_blank';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        performDownload(item, Overlay.activeInstance);
       });
     }
     $stage.append($card);
   }
 
-  /* ═══════════════════════════════════════════════════════════════════
-     COMPONENTVIEWER CLASS
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- COMPONENTVIEWER CLASS --- */
 
   function ComponentViewer($container, options) {
     this.id = ++ComponentViewer._counter;
@@ -3119,9 +3267,7 @@
     }
   };
 
-  /* ═══════════════════════════════════════════════════════════════════
-     JQUERY PLUGIN
-     ═══════════════════════════════════════════════════════════════════ */
+  /* --- JQUERY PLUGIN --- */
 
   $.fn[PLUGIN_NAME] = function(methodOrOptions) {
     if (typeof methodOrOptions === 'string') {

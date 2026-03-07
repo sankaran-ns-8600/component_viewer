@@ -194,6 +194,8 @@
 
 /* ── body ────────────────────────────────────────────────────────────── */
 .cv-body { flex: 1; display: flex; align-items: center; position: relative; min-height: 0; }
+.cv-body.cv-body-pdf { align-items: stretch; }
+.cv-body.cv-body-pdf .cv-stage-wrap { min-height: 0; }
 .cv-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   padding: 0; border: none; border-radius: 50%;
@@ -250,9 +252,15 @@
 
 /* ── stage ───────────────────────────────────────────────────────────── */
 .cv-stage-wrap {
-  flex: 1; height: 100%;
+  flex: 1; height: 100%; min-height: 0;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; position: relative;
+}
+.cv-stage-wrap.cv-stage-wrap-pdf {
+  align-items: stretch;
+}
+.cv-stage-wrap.cv-stage-wrap-pdf .cv-stage {
+  min-height: 0;
 }
 /* Comment overlay: small box on attachment, semi-transparent; size constrained to not cover full width */
 .cv-comment-wrap {
@@ -353,6 +361,12 @@
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   transition: opacity .26s ease-out;
+}
+.cv-stage.cv-stage-pdf {
+  align-items: stretch;
+}
+.cv-stage.cv-stage-pdf > * {
+  min-height: 0;
 }
 .cv-stage.cv-stage-in > * {
   opacity: 0;
@@ -622,10 +636,13 @@
 .cv-tb-btn:hover { background: rgba(255,255,255,.2); }
 .cv-tb-btn:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
 .cv-tb-btn.cv-active { background: rgba(66,133,244,.5); }
-.cv-tb-btn svg { vertical-align: middle; }
+.cv-tb-btn svg { vertical-align: middle; flex-shrink: 0; }
 .cv-tb-btn i   { font-size: 16px; line-height: 1; }
 .cv-tb-label   { font-size: 13px; }
 .cv-tb-sep { width: 1px; height: 20px; background: rgba(255,255,255,.15); margin: 0 4px; }
+/* Inline Copy and Markdown View source: match download button size and alignment */
+.cv-tb-copy svg,
+.cv-tb-markdown-toggle svg { width: 16px; height: 16px; }
 .cv-slideshow-btn { padding: 4px 8px; font-size: 11px; }
 .cv-slideshow-btn .cv-tb-label { font-size: 11px; }
 
@@ -748,6 +765,24 @@
   to { opacity: 0; transform: scale(0.85); }
 }
 
+/* strip message (e.g. "Copied to clipboard") */
+.cv-strip-message {
+  position: absolute; left: 50%; bottom: 72px;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(0,0,0,.8);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 12;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.cv-strip-message.cv-strip-visible { opacity: 1; }
+.cv-theme-light .cv-strip-message { background: rgba(0,0,0,.75); color: #fff; }
+
 .cv-jp-controls {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
@@ -849,7 +884,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    PDF (pdf.js)
    ═══════════════════════════════════════════════════════════════════════ */
-.cv-pdf-wrap { width: 100%; height: 100%; display: flex; overflow: hidden; }
+.cv-pdf-wrap { width: 100%; height: 100%; min-height: 0; display: flex; overflow: hidden; }
 .cv-pdf-iframe-wrap {
   width: 100%; height: 100%; display: flex; overflow: hidden;
 }
@@ -876,17 +911,74 @@
   background: rgba(0,0,0,.5); padding: 1px 4px; border-radius: 3px;
 }
 .cv-pdf-main {
-  flex: 1; overflow: auto;
-  display: flex; align-items: flex-start; justify-content: center; padding: 12px;
+  flex: 1; min-height: 0;
+  overflow-x: auto; overflow-y: auto;
+  display: block; padding: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.22) rgba(255,255,255,.06);
+}
+/* Slim scrollbars for PDF scroll (vertical + horizontal) */
+.cv-pdf-main::-webkit-scrollbar { width: 6px; height: 6px; }
+.cv-pdf-main::-webkit-scrollbar-track { background: rgba(255,255,255,.06); border-radius: 3px; }
+.cv-pdf-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 3px; }
+.cv-pdf-main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.35); }
+.cv-pdf-main-inner {
+  width: max-content; margin: 0 auto; min-height: 100%;
 }
 .cv-pdf-canvas-wrap {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   gap: 16px; min-height: 100%; padding: 8px 0;
 }
 .cv-pdf-canvas { box-shadow: 0 2px 12px rgba(0,0,0,.4); border-radius: 2px; max-width: 100%; }
-.cv-pdf-page-info { font-size: 12px; opacity: .7; padding: 0 6px; white-space: nowrap; min-width: 50px; text-align: center; }
+.cv-pdf-page-info { font-size: 12px; opacity: .7; padding: 0 6px; white-space: nowrap; min-width: 50px; text-align: center; cursor: pointer; }
+.cv-pdf-page-info .cv-pdf-page-current { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+.cv-pdf-page-input {
+  width: 2.2em; min-width: 24px; max-width: 48px;
+  font-size: 12px; text-align: center; padding: 2px 4px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3);
+  border-radius: 4px; color: inherit; box-sizing: border-box;
+}
+.cv-pdf-page-input:focus { outline: 2px solid rgba(66,133,244,.8); outline-offset: 1px; border-color: transparent; }
+.cv-pdf-zoom-select {
+  height: 28px; min-height: 28px; padding: 2px 24px 2px 8px;
+  font-size: 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 6px; color: inherit; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='%23e0e0e0'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center;
+}
+.cv-pdf-zoom-select:focus { outline: 2px solid rgba(66,133,244,.8); outline-offset: 1px; }
+.cv-theme-light .cv-pdf-page-input { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.15); color: #333; }
+.cv-theme-light .cv-pdf-zoom-select { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.15); color: #444; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='%23555'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E"); }
 
 .cv-pdf-page { position: relative; }
+.cv-pdf-text-layer {
+  position: absolute; left: 0; top: 0; overflow: hidden;
+  pointer-events: auto; user-select: text; -webkit-user-select: text;
+  cursor: text;
+  border-left: 3px solid rgba(66, 133, 244, 0.5);
+  box-sizing: border-box;
+}
+.cv-pdf-text-layer span {
+  position: absolute; white-space: pre; line-height: 1.15;
+  color: #000;
+  background: rgba(255, 235, 100, 0.75);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 200, 50, 0.2);
+}
+.cv-pdf-text-layer span::selection {
+  background: rgba(66, 133, 244, 0.4);
+}
+.cv-theme-light .cv-pdf-text-layer span {
+  color: #000;
+  background: rgba(255, 235, 100, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 200, 50, 0.25);
+}
+.cv-theme-light .cv-pdf-text-layer span::selection {
+  background: rgba(66, 133, 244, 0.3);
+}
 .cv-pdf-annotations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .cv-pdf-annot { pointer-events: auto; }
 .cv-pdf-annot-link { display: block; width: 100%; height: 100%; cursor: pointer; }

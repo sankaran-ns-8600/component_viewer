@@ -116,7 +116,8 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 | `pdf.cMapUrl` | string | `null` | Optional CMap URL for fonts. |
 | `pdf.cMapPacked` | boolean | `true` | Use packed CMaps. |
 | `pdf.annotations` | boolean | `true` | Render PDF annotations. |
-| `pdf.autoFit` | boolean | `true` | Scale page to fit stage (width and height). |
+| `pdf.autoFit` | boolean | `true` | Scale page to fit stage (width and height), within min/max scale for readability. |
+| `pdf.autoFitMinScale` | number | `0.75` | When autoFit is true, scale never goes below this (75%) so the PDF stays readable. |
 | `pdf.autoFitMaxScale` | number | `2.5` | Max scale when `autoFit` is true. |
 
 ### Media (jPlayer)
