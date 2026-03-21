@@ -1,6 +1,6 @@
 {
   "name": "@sankaran-8600/component-viewer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "jQuery plugin for attachment and media preview in an overlay",
   "main": "component-viewer.js",
   "style": "component-viewer.css",
@@ -12,14 +12,15 @@
     "README.md",
     "documentation.html",
     "example.html",
-    "example-jplayer-2.5.html",
-    "example-jquery1.7.html",
-    "example-no-libs.html",
-    "example-pdf-2.2.html"
+    "sample.md"
   ],
   "scripts": {
-    "minify": "terser component-viewer.js -o component-viewer.min.js -c -m",
-    "build": "npm run minify"
+    "minify": "npx terser component-viewer.js -o component-viewer.min.js -c passes=2,collapse_vars=true,reduce_vars=true -m --comments false",
+    "minify:japanese": "npx terser component-viewer-japanese.js -o component-viewer-japanese.min.js -c passes=2,collapse_vars=true,reduce_vars=true -m --comments false",
+    "build": "npm run minify && npm run minify:japanese",
+    "lint": "eslint component-viewer.js",
+    "lint:codecheck": "eslint component-viewer.codecheck.js",
+    "codecheck": "npm run lint && npm run lint:codecheck"
   },
   "keywords": ["jquery", "viewer", "overlay", "image", "video", "pdf", "attachment"],
   "license": "MIT",
@@ -32,6 +33,7 @@
   },
   "homepage": "https://github.com/sankaran-8600/component-viewer-v2#readme",
   "devDependencies": {
+    "eslint": "^8.57.0",
     "terser": "^5.36.0"
   }
 }
