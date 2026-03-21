@@ -33,7 +33,7 @@ Try the plugin in your browser with the full example page, which includes all co
 
 **[Open example.html](example.html)** — open this file in a browser to see multiple demo cases and use the programmatic API buttons to open specific items.
 
-The example page uses jQuery 3.7, jPlayer, and PDF.js (loaded from CDN). For a minimal setup without jPlayer/PDF.js, see [example-no-libs.html](example-no-libs.html). For jQuery 1.7 compatibility, see [example-jquery1.7.html](example-jquery1.7.html).
+The example page uses jQuery 3.7, jPlayer, and PDF.js (loaded from CDN). Without jPlayer or PDF.js, the plugin uses native HTML5 media and an iframe for PDF — use a minimal page that loads only jQuery + the plugin to try that.
 
 ---
 
@@ -54,7 +54,15 @@ Include the plugin and stylesheet after jQuery:
 <script src="component-viewer.js"></script>
 ```
 
+**When embedding in another project:** Load `component-viewer.css` *after* your app’s base/reset styles so the viewer’s look isn’t overridden. The stylesheet is plain CSS; **if you bundle with Less**, do not process this file as Less (Less interprets `min()`/`max()` and can change output). Either link to it as a separate stylesheet or import it unchanged: `@import (inline) "component-viewer.css";`
+
 For video/audio with jPlayer, include jPlayer before the plugin. For PDF with pdf.js, include the library and set `pdf.workerSrc`. For full Markdown support, include marked (e.g. from a CDN) before the plugin.
+
+**Minified build:** From this folder run `npm install` then `npm run build` to generate `component-viewer.min.js` and `component-viewer-japanese.min.js` (Terser). Use the `.min.js` files in production for smaller downloads.
+
+To run the project’s code check (ESLint, aligned with [CodeCheck](https://cm-wiki.csez.zohocorpin.com/docs/Repository/CodeCheck)): `npm run lint` or `npm run codecheck`. To lint the CodeCheck + I18N variant: `npm run lint:codecheck`.
+
+**CodeCheck + I18N variant:** `component-viewer.codecheck.js` is a copy of the plugin maintained for full CodeCheck and I18N compliance. It uses the same ESLint config; all user-facing strings go through `str(inst, key)` and `DEFAULT_STRINGS`; non-translatable blocks (e.g. SVG in `Icons`) are wrapped with `/* ignorei18n_start */` and `/* ignorei18n_end */` per I18N code check. Use this file when you need a build that satisfies strict CodeCheck and I18N rules.
 
 ---
 
@@ -119,6 +127,7 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 | `pdf.autoFit` | boolean | `true` | Scale page to fit stage (width and height), within min/max scale for readability. |
 | `pdf.autoFitMinScale` | number | `0.75` | When autoFit is true, scale never goes below this (75%) so the PDF stays readable. |
 | `pdf.autoFitMaxScale` | number | `2.5` | Max scale when `autoFit` is true. |
+| `pdf.twoPageView` | boolean | `false` | When true, a toolbar button is shown to toggle single/two-page view. PDF opens in single-page; user can switch to side-by-side (spread) view. Auto-fit fits both pages in width when in two-page mode. |
 
 ### Media (jPlayer)
 
@@ -126,6 +135,25 @@ All options are optional. Defaults are in `$.fn.componentViewer.defaults`.
 |--------|------|---------|-------------|
 | `supportedVideoFormats` | string | `null` | Comma-separated jPlayer formats for video (e.g. `'m4v, webmv'`). |
 | `supportedAudioFormats` | string | `null` | Comma-separated jPlayer formats for audio (e.g. `'mp3, oga'`). |
+
+### Inline (Highlight.js)
+
+For **inline** (source/code) items you can enable syntax highlighting with [Highlight.js](https://highlightjs.org/). The plugin does not bundle it; the host page must include the script and a theme CSS.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `inline.syntaxHighlight` | boolean | `false` | When `true`, use `window.hljs` to highlight code (if present). |
+| `inline.getLanguage` | function | `null` | `function(item)` returning a language string (e.g. `'javascript'`, `'java'`). If `null`, language is inferred from `item.fileExt` / `item.title`. |
+| `onInlineHtml` | function | `null` | `function(content, item, viewer)` returning HTML for the inline body. When set, overrides built-in rendering (e.g. custom highlighter). |
+
+**Loading Highlight.js for the highlight case:** Include the library and a theme in your page (before or with the viewer). The plugin only calls `window.hljs.highlight()`; all colors and styles come from the theme CSS you load. Example:
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css">
+```
+
+Then enable highlighting: `inline: { syntaxHighlight: true }`. The viewer’s CSS only keeps Highlight.js token spans aligned (e.g. `.cv-inline-body .cv-inline-code [class*="hljs-"]`); it does not provide a theme.
 
 ### Data and callbacks
 
@@ -453,12 +481,27 @@ component-viewer-v2/
 ├── component-viewer.css   # Styles
 ├── README.md              # This documentation
 ├── documentation.html     # Full API docs (HTML, JavaDoc-style)
-├── example.html           # Full examples (multiple cases)
-├── example-jquery1.7.html # Example with jQuery 1.7
-└── example-no-libs.html   # Example without jPlayer/PDF.js
+└── example.html           # Full examples (multiple cases)
 ```
 
 **HTML documentation:** Open `documentation.html` in a browser for a detailed, navigable API reference (options, item data, content types, toolbar, callbacks, public API, browser support, and examples).
+
+---
+
+- **Toolbar toggle**  
+  The two-page toggle appears in the PDF toolbar **only when** `pdf.twoPageView: true`. The button shows the “other” mode as tooltip (e.g. “Single-page view” when in two-page mode). It gets the `cv-active` class when two-page view is on. Toggling re-applies auto-fit and re-renders all pages.
+
+- **Two-page rendering**  
+  In two-page mode, pages are rendered in pairs (1–2, 3–4, …); the last page appears alone if the total is odd. A fixed gap between the two pages is used; auto-fit scale is computed so both pages fit in the stage width. New CSS class `.cv-pdf-spread` lays out the two pages side by side.
+
+- **I18N and icon**  
+  New default strings: `twoPageView`, `singlePageView`. New icon `Icons.twoPageView` (two side-by-side rectangles) used for the toggle button.
+
+- **Example**  
+  **Case 8a** in `example.html` demonstrates the two-page view: `pdf: { twoPageView: true }` with one PDF attachment. Open the PDF to see the toggle and switch between single- and two-page view.
+
+- **Documentation**  
+  README, `documentation.html`, and the Case 8a description in `example.html` updated to describe the option, default (single-page), and toggle behavior.
 
 ---
 

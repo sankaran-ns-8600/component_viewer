@@ -1,12 +1,268 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   ComponentViewer – Stylesheet
+   ComponentViewer – Stylesheet (plain CSS)
+   If you @import this into a Less build, use (inline) so Less does not
+   process it:  @import (inline) "component-viewer.css";
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── overlay ─────────────────────────────────────────────────────────── */
+/* Isolate from host: consistent box model; load this CSS after your app base so our rules win. */
+.cv-overlay,
+.cv-overlay *,
+.cv-overlay *::before,
+.cv-overlay *::after {
+  box-sizing: border-box;
+}
+
+/* Video/audio player: prevent host purple in all contexts (overlay or inline e.g. attachments list) */
+.cv-video-wrap button,
+.cv-audio-wrap button {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+.cv-video-wrap button:focus,
+.cv-video-wrap button:active,
+.cv-video-wrap button:focus-visible,
+.cv-video-wrap .cv-jp-big-play:focus,
+.cv-video-wrap .cv-jp-big-play:active,
+.cv-video-wrap .cv-jp-big-play:focus-visible,
+.cv-audio-wrap button:focus,
+.cv-audio-wrap button:active,
+.cv-audio-wrap button:focus-visible,
+.cv-audio-wrap .cv-jp-big-play:focus,
+.cv-audio-wrap .cv-jp-big-play:active,
+.cv-audio-wrap .cv-jp-big-play:focus-visible,
+.cv-video-wrap .cv-jp-btn:focus,
+.cv-video-wrap .cv-jp-btn:active,
+.cv-video-wrap .cv-jp-btn:focus-visible,
+.cv-audio-wrap .cv-jp-btn:focus,
+.cv-audio-wrap .cv-jp-btn:active,
+.cv-audio-wrap .cv-jp-btn:focus-visible,
+.cv-video-wrap .jp-play:focus,
+.cv-video-wrap .jp-play:active,
+.cv-video-wrap .jp-play:focus-visible,
+.cv-video-wrap .jp-pause:focus,
+.cv-video-wrap .jp-pause:active,
+.cv-video-wrap .jp-pause:focus-visible,
+.cv-audio-wrap .jp-play:focus,
+.cv-audio-wrap .jp-play:active,
+.cv-audio-wrap .jp-play:focus-visible,
+.cv-audio-wrap .jp-pause:focus,
+.cv-audio-wrap .jp-pause:active,
+.cv-audio-wrap .jp-pause:focus-visible,
+.cv-video-wrap .jp-mute:focus,
+.cv-video-wrap .jp-mute:active,
+.cv-video-wrap .jp-mute:focus-visible,
+.cv-video-wrap .jp-unmute:focus,
+.cv-video-wrap .jp-unmute:active,
+.cv-video-wrap .jp-unmute:focus-visible,
+.cv-audio-wrap .jp-mute:focus,
+.cv-audio-wrap .jp-mute:active,
+.cv-audio-wrap .jp-mute:focus-visible,
+.cv-audio-wrap .jp-unmute:focus,
+.cv-audio-wrap .jp-unmute:active,
+.cv-audio-wrap .jp-unmute:focus-visible,
+.cv-video-wrap .jp-full-screen:focus,
+.cv-video-wrap .jp-full-screen:active,
+.cv-video-wrap .jp-full-screen:focus-visible,
+.cv-video-wrap .jp-restore-screen:focus,
+.cv-video-wrap .jp-restore-screen:active,
+.cv-video-wrap .jp-restore-screen:focus-visible,
+.cv-video-wrap .cv-jp-hd:focus,
+.cv-video-wrap .cv-jp-hd:active,
+.cv-video-wrap .cv-jp-hd:focus-visible,
+.cv-audio-wrap select.cv-jp-speed:focus,
+.cv-audio-wrap select.cv-jp-speed:active,
+.cv-audio-wrap select.cv-jp-speed:focus-visible,
+.cv-video-wrap select.cv-jp-speed:focus,
+.cv-video-wrap select.cv-jp-speed:active,
+.cv-video-wrap select.cv-jp-speed:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  background-color: rgba(255,255,255,.08) !important;
+  background-image: none !important;
+  color: inherit !important;
+}
+
+/* Prevent host project focus/active/focus-visible styles (e.g. purple) from affecting overlay buttons */
+.cv-overlay button:focus,
+.cv-overlay button:active,
+.cv-overlay button:focus-visible,
+.cv-overlay [role="button"]:focus,
+.cv-overlay [role="button"]:active,
+.cv-overlay [role="button"]:focus-visible,
+.cv-overlay .cv-tb-btn:focus,
+.cv-overlay .cv-tb-btn:active,
+.cv-overlay .cv-tb-btn:focus-visible,
+.cv-overlay .cv-jp-btn:focus,
+.cv-overlay .cv-jp-btn:active,
+.cv-overlay .cv-jp-btn:focus-visible,
+.cv-overlay .cv-close:focus,
+.cv-overlay .cv-close:active,
+.cv-overlay .cv-close:focus-visible,
+.cv-overlay .cv-nav:focus,
+.cv-overlay .cv-nav:active,
+.cv-overlay .cv-nav:focus-visible,
+.cv-overlay .cv-theme-toggle:focus,
+.cv-overlay .cv-theme-toggle:active,
+.cv-overlay .cv-theme-toggle:focus-visible,
+.cv-overlay .cv-fullscreen-toggle:focus,
+.cv-overlay .cv-fullscreen-toggle:active,
+.cv-overlay .cv-fullscreen-toggle:focus-visible,
+.cv-overlay .cv-comment-toggle:focus,
+.cv-overlay .cv-comment-toggle:active,
+.cv-overlay .cv-comment-toggle:focus-visible,
+.cv-overlay .cv-carousel-toggle:focus,
+.cv-overlay .cv-carousel-toggle:active,
+.cv-overlay .cv-carousel-toggle:focus-visible,
+.cv-overlay .cv-carousel-nav:focus,
+.cv-overlay .cv-carousel-nav:active,
+.cv-overlay .cv-carousel-nav:focus-visible,
+.cv-overlay .cv-comment-prev:focus,
+.cv-overlay .cv-comment-prev:active,
+.cv-overlay .cv-comment-prev:focus-visible,
+.cv-overlay .cv-comment-next:focus,
+.cv-overlay .cv-comment-next:active,
+.cv-overlay .cv-comment-next:focus-visible,
+.cv-overlay .cv-jp-big-play:focus,
+.cv-overlay .cv-jp-big-play:active,
+.cv-overlay .cv-jp-big-play:focus-visible,
+.cv-overlay .jp-play:focus,
+.cv-overlay .jp-play:active,
+.cv-overlay .jp-play:focus-visible,
+.cv-overlay .jp-pause:focus,
+.cv-overlay .jp-pause:active,
+.cv-overlay .jp-pause:focus-visible,
+.cv-overlay .jp-mute:focus,
+.cv-overlay .jp-mute:active,
+.cv-overlay .jp-mute:focus-visible,
+.cv-overlay .jp-unmute:focus,
+.cv-overlay .jp-unmute:active,
+.cv-overlay .jp-unmute:focus-visible,
+.cv-overlay .jp-full-screen:focus,
+.cv-overlay .jp-full-screen:active,
+.cv-overlay .jp-full-screen:focus-visible,
+.cv-overlay .cv-jp-hd:focus,
+.cv-overlay .cv-jp-hd:active,
+.cv-overlay .cv-jp-hd:focus-visible,
+.cv-overlay .cv-video-wrap button:focus,
+.cv-overlay .cv-video-wrap button:active,
+.cv-overlay .cv-video-wrap button:focus-visible,
+.cv-overlay .cv-audio-wrap button:focus,
+.cv-overlay .cv-audio-wrap button:active,
+.cv-overlay .cv-audio-wrap button:focus-visible,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:focus,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:active,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:focus-visible,
+.cv-overlay [class*="cv-jp"]:focus,
+.cv-overlay [class*="cv-jp"]:active,
+.cv-overlay [class*="cv-jp"]:focus-visible,
+.cv-overlay select:focus,
+.cv-overlay select:active,
+.cv-overlay select:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+  background-color: transparent !important;
+  color: inherit !important;
+}
+/* Re-apply intended background for header/close/nav and video/audio buttons so host purple does not show */
+.cv-overlay .cv-close:focus,
+.cv-overlay .cv-close:active,
+.cv-overlay .cv-close:focus-visible,
+.cv-overlay .cv-theme-toggle:focus,
+.cv-overlay .cv-theme-toggle:active,
+.cv-overlay .cv-theme-toggle:focus-visible,
+.cv-overlay .cv-fullscreen-toggle:focus,
+.cv-overlay .cv-fullscreen-toggle:active,
+.cv-overlay .cv-fullscreen-toggle:focus-visible,
+.cv-overlay .cv-comment-toggle:focus,
+.cv-overlay .cv-comment-toggle:active,
+.cv-overlay .cv-comment-toggle:focus-visible,
+.cv-overlay .cv-carousel-toggle:focus,
+.cv-overlay .cv-carousel-toggle:active,
+.cv-overlay .cv-carousel-toggle:focus-visible,
+.cv-overlay .cv-nav:focus,
+.cv-overlay .cv-nav:active,
+.cv-overlay .cv-nav:focus-visible,
+.cv-overlay .cv-carousel-nav:focus,
+.cv-overlay .cv-carousel-nav:active,
+.cv-overlay .cv-carousel-nav:focus-visible,
+.cv-overlay .cv-comment-prev:focus,
+.cv-overlay .cv-comment-prev:active,
+.cv-overlay .cv-comment-prev:focus-visible,
+.cv-overlay .cv-comment-next:focus,
+.cv-overlay .cv-comment-next:active,
+.cv-overlay .cv-comment-next:focus-visible,
+.cv-overlay .cv-video-wrap button:focus,
+.cv-overlay .cv-video-wrap button:active,
+.cv-overlay .cv-video-wrap button:focus-visible,
+.cv-overlay .cv-video-wrap .cv-jp-big-play:focus,
+.cv-overlay .cv-video-wrap .cv-jp-big-play:active,
+.cv-overlay .cv-video-wrap .cv-jp-big-play:focus-visible,
+.cv-overlay .cv-audio-wrap button:focus,
+.cv-overlay .cv-audio-wrap button:active,
+.cv-overlay .cv-audio-wrap button:focus-visible,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:focus,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:active,
+.cv-overlay .cv-audio-wrap .cv-jp-big-play:focus-visible,
+.cv-overlay .cv-jp-btn:focus,
+.cv-overlay .cv-jp-btn:active,
+.cv-overlay .cv-jp-btn:focus-visible,
+.cv-overlay .jp-play:focus,
+.cv-overlay .jp-play:active,
+.cv-overlay .jp-play:focus-visible,
+.cv-overlay .jp-pause:focus,
+.cv-overlay .jp-pause:active,
+.cv-overlay .jp-pause:focus-visible,
+.cv-overlay .jp-mute:focus,
+.cv-overlay .jp-mute:active,
+.cv-overlay .jp-mute:focus-visible,
+.cv-overlay .jp-unmute:focus,
+.cv-overlay .jp-unmute:active,
+.cv-overlay .jp-unmute:focus-visible,
+.cv-overlay .jp-full-screen:focus,
+.cv-overlay .jp-full-screen:active,
+.cv-overlay .jp-full-screen:focus-visible,
+.cv-overlay .jp-restore-screen:focus,
+.cv-overlay .jp-restore-screen:active,
+.cv-overlay .jp-restore-screen:focus-visible,
+.cv-overlay .cv-jp-hd:focus,
+.cv-overlay .cv-jp-hd:active,
+.cv-overlay .cv-jp-hd:focus-visible {
+  background-color: rgba(255,255,255,.08) !important;
+  background-image: none !important;
+}
+/* Prev/next chevrons: slightly grey (host .cv-overlay button:focus uses color: inherit !important) */
+.cv-overlay .cv-nav:focus,
+.cv-overlay .cv-nav:active,
+.cv-overlay .cv-nav:focus-visible,
+.cv-overlay .cv-carousel-nav:focus,
+.cv-overlay .cv-carousel-nav:active,
+.cv-overlay .cv-carousel-nav:focus-visible {
+  color: #aeb6c4 !important;
+}
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-nav:focus,
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-nav:active,
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-nav:focus-visible,
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-carousel-nav:focus,
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-carousel-nav:active,
+.cv-overlay .cv-shell.cv-stage-light-bg .cv-carousel-nav:focus-visible {
+  color: #d8dce3 !important;
+}
+.cv-overlay.cv-theme-light .cv-nav:focus,
+.cv-overlay.cv-theme-light .cv-nav:active,
+.cv-overlay.cv-theme-light .cv-nav:focus-visible,
+.cv-overlay.cv-theme-light .cv-carousel-nav:focus,
+.cv-overlay.cv-theme-light .cv-carousel-nav:active,
+.cv-overlay.cv-theme-light .cv-carousel-nav:focus-visible {
+  color: #333 !important;
+}
 .cv-overlay {
-  position: fixed; inset: 0; z-index: 99999;
+  position: fixed; inset: 0;
+  z-index: 2147483647; /* above host UI (e.g. Connect chatbar/panels) so overlay and footer are never hidden */
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,.88);
+  background: rgba(0,0,0,.94);
   opacity: 0; visibility: hidden;
   transition: opacity .3s ease-out, visibility .3s ease-out;
 }
@@ -24,8 +280,12 @@
   position: relative; z-index: 1;
   transform: translateZ(0);  /* own stacking context so shell is always above backdrop */
   display: flex; flex-direction: column;
-  width: 96vw; height: 96vh; max-width: 1400px;
+  width: 100vw; height: 100vh; max-width: none;
   pointer-events: auto;
+  background: rgba(14,14,14,.98);
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
   color: #e0e0e0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px; user-select: none;
@@ -46,7 +306,7 @@
 /* ── header ──────────────────────────────────────────────────────────── */
 .cv-header {
   display: flex; align-items: center;
-  padding: 10px 12px; flex-shrink: 0; gap: 12px;
+  padding: 12px 18px; flex-shrink: 0; gap: 12px;
 }
 .cv-header-left   { flex-shrink: 0; }
 .cv-header-center { flex: 1; min-width: 0; }
@@ -56,8 +316,9 @@
 .cv-theme-toggle,
 .cv-fullscreen-toggle,
 .cv-comment-toggle {
-  background: rgba(255,255,255,.08); border: none; color: #e0e0e0;
-  width: 36px; height: 36px; border-radius: 6px; cursor: pointer;
+  background: rgba(255,255,255,.14); border: none; color: #e0e0e0;
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+  flex-shrink: 0; aspect-ratio: 1; border-radius: 6px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .15s; padding: 0;
 }
@@ -75,9 +336,9 @@
 .cv-comment-toggle.cv-active:hover,
 .cv-comment-toggle[aria-expanded="true"]:hover { background: rgba(66,133,244,.5); }
 .cv-close {
-  background: rgba(255,255,255,.08); border: none; color: #e0e0e0;
-  font-size: 24px; width: 36px; height: 36px; line-height: 1;
-  border-radius: 6px; cursor: pointer;
+  background: rgba(255,255,255,.14); border: none; color: #e0e0e0;
+  font-size: 24px; width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+  flex-shrink: 0; aspect-ratio: 1; line-height: 1; border-radius: 6px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .15s;
 }
@@ -87,7 +348,7 @@
 /* ── tooltip (hover, not title attribute) ──────────────────────────────── */
 .cv-tooltip {
   position: fixed;
-  z-index: 100000;
+  z-index: 2147483647; /* above overlay so tooltip is visible when overlay is open */
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.3;
@@ -199,9 +460,12 @@
 .cv-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   padding: 0; border: none; border-radius: 50%;
-  background: rgba(255,255,255,.12);
-  color: #e0e0e0;
+  background: rgba(255,255,255,.22);
+  color: #aeb6c4;
   width: 44px; height: 44px;
+  min-width: 44px; min-height: 44px;
+  flex-shrink: 0;
+  aspect-ratio: 1;
   font-size: 16px;
   line-height: 1;
   cursor: pointer; z-index: 2;
@@ -222,21 +486,24 @@
   text-align: center;
 }
 .cv-nav svg { width: 16px; height: 16px; display: block; }
-.cv-nav-prev { left: 12px; }
-.cv-nav-next { right: 12px; }
+.cv-nav-prev { left: 18px; }
+.cv-nav-next { right: 18px; }
 
 /* Inline/markdown: stage has white bg — make nav arrows visible in dark mode */
 .cv-shell.cv-stage-light-bg .cv-nav {
-  background: rgba(0,0,0,.6);
-  color: #fff;
+  background: rgba(0,0,0,.6) !important;
+  color: #d8dce3 !important;
   box-shadow: 0 1px 4px rgba(0,0,0,.4);
 }
-.cv-shell.cv-stage-light-bg .cv-nav:hover {
-  background: rgba(0,0,0,.8);
-  color: #fff;
+.cv-shell.cv-stage-light-bg .cv-nav:hover,
+.cv-shell.cv-stage-light-bg .cv-nav:focus,
+.cv-shell.cv-stage-light-bg .cv-nav:active,
+.cv-shell.cv-stage-light-bg .cv-nav:focus-visible {
+  background: rgba(0,0,0,.6) !important;
+  color: #d8dce3 !important;
 }
 .cv-shell.cv-stage-light-bg .cv-nav svg {
-  stroke: #fff;
+  stroke: #d8dce3;
 }
 
 /* stage-only mode: hide header, carousel strip, and footer; only stage + prev/next nav */
@@ -268,8 +535,8 @@
   bottom: 16px;
   right: 16px;
   left: auto;
-  max-width: min(320px, 85%);
-  max-height: min(140px, 35vh);
+  max-width: ~"min(320px, 85%)";
+  max-height: ~"min(140px, 35vh)";
   overflow-y: auto;
   padding: 10px 12px 12px;
   background: rgba(0,0,0,.4);
@@ -358,6 +625,8 @@
   transition: opacity .26s ease-in;
 }
 .cv-stage {
+  position: relative;
+  z-index: 0; /* below .cv-loader (z-index: 20) so loading spinner is visible */
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   transition: opacity .26s ease-out;
@@ -377,19 +646,28 @@
 }
 
 /* ── loader ──────────────────────────────────────────────────────────── */
-.cv-loader { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 2; }
-.cv-loader.cv-active { display: flex; }
+.cv-loader {
+  position: absolute; inset: 0;
+  display: none; align-items: center; justify-content: center;
+  z-index: 20; /* above stage content so spinner is visible during image load */
+  background: rgba(0,0,0,.25); /* subtle backdrop so spinner is visible */
+  pointer-events: none;
+}
+.cv-loader.cv-active { display: flex !important; }
 .cv-spinner {
-  width: 36px; height: 36px;
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+  flex-shrink: 0;
   border: 3px solid rgba(255,255,255,.15); border-top-color: rgba(255,255,255,.8);
-  border-radius: 50%; animation: cv-spin .7s linear infinite;
+  border-radius: 50%;
+  animation: cv-spin .7s linear infinite;
 }
 @keyframes cv-spin { to { transform: rotate(360deg); } }
 
 /* ── carousel toggle (header button) ──────────────────────────────────── */
 .cv-carousel-toggle {
-  background: rgba(255,255,255,.08); border: none; color: #e0e0e0;
-  width: 36px; height: 36px; border-radius: 6px; cursor: pointer;
+  background: rgba(255,255,255,.14); border: none; color: #e0e0e0;
+  width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+  flex-shrink: 0; aspect-ratio: 1; border-radius: 6px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .15s; padding: 0;
 }
@@ -426,11 +704,11 @@
 }
 .cv-carousel-nav {
   flex-shrink: 0;
-  width: 28px; height: 48px;
+  width: 28px; height: 48px; min-width: 28px; min-height: 48px;
   margin: 0 4px;
   padding: 0; border: none; border-radius: 6px;
-  background: rgba(255,255,255,.12);
-  color: #e0e0e0;
+  background: rgba(255,255,255,.22);
+  color: #aeb6c4;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .2s, transform .15s;
@@ -574,7 +852,7 @@
 
 /* ── footer ──────────────────────────────────────────────────────────── */
 .cv-footer {
-  flex-shrink: 0; padding: 8px 12px;
+  flex-shrink: 0; padding: 10px 18px;
   display: flex; flex-direction: column; align-items: stretch; gap: 0;
 }
 .cv-footer-row {
@@ -612,12 +890,17 @@
   font-size: 12px;
   font-weight: 600;
   color: rgba(129, 199, 132, 0.95);
+  flex-shrink: 0;
+  white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.2s ease;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0s;
 }
 .cv-poll-option-updated.cv-hidden {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0s 0.2s;
 }
 .cv-toolbar {
   display: flex; align-items: center; gap: 6px;
@@ -626,20 +909,51 @@
 }
 .cv-toolbar:empty { display: none; }
 
+/* Harden toolbar buttons so host styles cannot stretch icons (same approach as header/top buttons) */
 .cv-tb-btn {
   background: rgba(255,255,255,.08); border: none; color: #e0e0e0;
   cursor: pointer; border-radius: 6px;
   padding: 6px 10px; font-size: 13px;
+  min-width: 32px; min-height: 32px;
+  flex-shrink: 0;
+  align-self: center;
   display: inline-flex; align-items: center; justify-content: center;
   gap: 6px; transition: background .15s;
 }
 .cv-tb-btn:hover { background: rgba(255,255,255,.2); }
+/* Force same button box for all toolbar buttons (custom e.g. .cv-tb-edit-image); host .ci-pencil etc. must not strip background */
+.cv-overlay .cv-toolbar .cv-tb-btn {
+  background: rgba(255,255,255,.14) !important;
+  border: none !important; border-radius: 6px !important;
+  padding: 6px 10px !important; min-width: 32px !important; min-height: 32px !important;
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+}
+.cv-overlay .cv-toolbar .cv-tb-btn:hover { background: rgba(255,255,255,.26) !important; }
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn {
+  background: rgba(0,0,0,.06) !important; color: #444 !important;
+}
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn:hover { background: rgba(0,0,0,.12) !important; }
 .cv-tb-btn:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+/* Scoped under .cv-overlay so active state wins over host project button styles */
+.cv-overlay .cv-toolbar .cv-tb-btn.cv-active { background: rgba(66,133,244,.5) !important; color: rgba(255,255,255,.95) !important; }
+.cv-overlay .cv-toolbar .cv-tb-btn.cv-active:hover { background: rgba(66,133,244,.6) !important; color: rgba(255,255,255,.95) !important; }
 .cv-tb-btn.cv-active { background: rgba(66,133,244,.5); }
-.cv-tb-btn svg { vertical-align: middle; flex-shrink: 0; }
+.cv-tb-btn svg {
+  width: 18px; height: 18px;
+  display: block; vertical-align: middle; flex-shrink: 0;
+}
 .cv-tb-btn i   { font-size: 16px; line-height: 1; }
+/* Class-based toolbar icons (e.g. icon font .ci-pencil): plugin adds .cv-tb-icon; color on element and ::before overrides host .ci-pencil:before */
+.cv-overlay .cv-toolbar .cv-tb-btn .cv-tb-icon,
+.cv-overlay .cv-toolbar .cv-tb-btn .cv-tb-icon::before,
+.cv-overlay .cv-toolbar .cv-tb-btn i.cv-tb-icon.ci-pencil,
+.cv-overlay .cv-toolbar .cv-tb-btn i.cv-tb-icon.ci-pencil::before { color: rgba(255,255,255,.95) !important; opacity: 1 !important; }
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn .cv-tb-icon,
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn .cv-tb-icon::before,
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn i.cv-tb-icon.ci-pencil,
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn i.cv-tb-icon.ci-pencil::before { color: #444 !important; opacity: 1 !important; }
 .cv-tb-label   { font-size: 13px; }
-.cv-tb-sep { width: 1px; height: 20px; background: rgba(255,255,255,.15); margin: 0 4px; }
+.cv-tb-sep { width: 1px; height: 20px; min-height: 20px; flex-shrink: 0; background: rgba(255,255,255,.15); margin: 0 4px; }
 /* Inline Copy and Markdown View source: match download button size and alignment */
 .cv-tb-copy svg,
 .cv-tb-markdown-toggle svg { width: 16px; height: 16px; }
@@ -664,11 +978,19 @@
 }
 
 /* ── zoom widget ─────────────────────────────────────────────────────── */
-.cv-zoom-widget { display: flex; align-items: center; gap: 6px; }
-.cv-zoom-widget .cv-tb-btn { padding: 4px 6px; }
+.cv-zoom-widget {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.cv-zoom-widget .cv-tb-btn {
+  padding: 4px 6px;
+  min-width: 32px; min-height: 32px;
+  flex-shrink: 0;
+}
 .cv-zoom-slider {
   -webkit-appearance: none; appearance: none;
-  width: 130px; height: 4px;
+  width: 130px; min-width: 80px; height: 4px;
+  flex-shrink: 0;
   background: rgba(255,255,255,.2); border-radius: 2px; outline: none; cursor: pointer;
 }
 .cv-zoom-slider::-webkit-slider-thumb {
@@ -712,33 +1034,65 @@
   display: flex; align-items: center; justify-content: center;
   background: #000; border-radius: 4px; overflow: hidden;
 }
+/* beforeVideoPlay gate: same contract as beforeOpen ([data-cv-gate-proceed]); jPlayer path only */
+.cv-video-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.82);
+  color: #e8e8e8;
+  text-align: center;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.cv-theme-light .cv-video-gate {
+  background: rgba(255, 255, 255, 0.94);
+  color: #222;
+}
 .cv-jp-player { width: 100%; height: 100%; }
 .cv-jp-player img, .cv-jp-player video { width: 100% !important; height: 100% !important; object-fit: contain; }
 .cv-native-video { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 .cv-jp-video-ui { position: absolute; inset: 0; display: flex; flex-direction: column; }
-.cv-jp-video-screen { flex: 1; cursor: pointer; }
+.cv-jp-video-screen { flex: 1; cursor: pointer; position: relative; z-index: 1; }
 
-/* big center play button — icon centered in middle */
+/* poster image shown before jPlayer is initialized; hidden once playback is ready */
+.cv-jp-poster {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+  background-color: #000;
+}
+.cv-jp-poster.cv-hidden { visibility: hidden; pointer-events: none; }
+
+/* big center play button — grey circle, white play icon, medium size */
 .cv-jp-big-play {
   position: absolute; top: 0; left: 0; right: 0; bottom: 48px;
   width: 100%;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; z-index: 1;
+  cursor: pointer; z-index: 2;
   pointer-events: auto;
+  color: #fff;
 }
 .cv-jp-big-play svg {
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
   display: block;
-  width: 72px; height: 72px; padding: 16px;
-  background: rgba(0,0,0,.55); border-radius: 50%;
-  transition: transform .15s, opacity .2s;
+  width: 56px; height: 56px; min-width: 56px; min-height: 56px;
+  flex-shrink: 0;
+  background: rgba(90,90,90,.92);
+  border-radius: 50%;
+  box-shadow: 0 2px 12px rgba(0,0,0,.35);
+  transition: transform .2s ease, opacity .2s, background .2s;
 }
-.cv-jp-big-play:hover svg { transform: translate(-50%, -50%) scale(1.08); }
+.cv-jp-big-play:hover svg {
+  transform: scale(1.06);
+  background: rgba(110,110,110,.95);
+}
 .cv-jp-big-play.cv-hidden { pointer-events: none; }
-.cv-jp-big-play.cv-hidden svg { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+.cv-jp-big-play.cv-hidden svg { opacity: 0; transform: scale(0.85); }
 
 /* shortcut feedback overlay (video only; small icon at top-right when Space/M used) */
 .cv-jp-state-feedback {
@@ -748,7 +1102,8 @@
   pointer-events: none; z-index: 2;
 }
 .cv-jp-state-feedback svg {
-  width: 40px; height: 40px; padding: 10px;
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px;
+  padding: 10px; flex-shrink: 0;
   background: rgba(0,0,0,.6); border-radius: 50%;
   color: #fff;
   animation: cv-jp-state-feedback-in .25s ease-out;
@@ -786,15 +1141,31 @@
 .cv-jp-controls {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
-  background: linear-gradient(transparent, rgba(0,0,0,.75));
+  background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.88));
+  flex-wrap: nowrap;
+  min-height: 40px;
+}
+.cv-jp-controls > * {
+  flex-shrink: 0;
+}
+.cv-jp-controls > .cv-jp-progress {
+  flex-shrink: 1;
+  min-width: 60px;
 }
 .cv-jp-btn {
-  background: none; border: none; color: #fff;
+  background: rgba(255,255,255,.14); border: none; color: #fff;
+  border-radius: 6px;
   cursor: pointer; padding: 4px;
   display: flex; align-items: center; justify-content: center;
-  opacity: .85; transition: opacity .15s;
+  opacity: .95; transition: opacity .15s, background .15s;
+  min-width: 32px; min-height: 32px;
+  flex-shrink: 0; align-self: center;
 }
-.cv-jp-btn:hover { opacity: 1; }
+.cv-jp-btn:hover { opacity: 1; background: rgba(255,255,255,.24); }
+.cv-jp-btn svg {
+  width: 18px; height: 18px;
+  display: block; flex-shrink: 0;
+}
 .cv-jp-btn-lg svg { width: 28px; height: 28px; }
 .cv-jp-hd { font-size: 11px; font-weight: 700; min-width: 28px; letter-spacing: .02em; }
 .cv-jp-hd.cv-jp-hd-active {
@@ -818,7 +1189,7 @@
   pointer-events: none;
   z-index: 2;
 }
-.cv-jp-time { font-size: 12px; color: rgba(255,255,255,.7); white-space: nowrap; min-width: 36px; }
+.cv-jp-time { font-size: 12px; color: rgba(255,255,255,.7); white-space: nowrap; min-width: 36px; flex-shrink: 0; }
 
 .cv-jp-progress {
   flex: 1; height: 4px; border-radius: 2px;
@@ -832,14 +1203,22 @@
 .cv-jp-speed {
   background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
   color: #fff; border-radius: 4px;
-  padding: 2px 4px; font-size: 12px;
+  padding: 2px 6px; font-size: 12px;
   cursor: pointer; outline: none;
+  min-width: 48px; max-width: 56px; width: 52px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 28px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 .cv-jp-speed option { background: #222; color: #fff; }
 
 .cv-jp-volume {
-  width: 60px; height: 4px; border-radius: 2px;
+  width: 60px; min-width: 60px; max-width: 60px; height: 4px; border-radius: 2px;
   background: rgba(255,255,255,.2); position: relative; cursor: pointer;
+  flex-shrink: 0;
 }
 .cv-jp-volume-val {
   height: 100%; background: #fff; border-radius: 2px;
@@ -861,9 +1240,14 @@
   align-items: center; gap: 14px; text-align: center;
 }
 .cv-audio-icon {
-  width: 110px; height: 110px;
+  width: 110px; height: 110px; min-width: 110px; min-height: 110px;
+  flex-shrink: 0;
   background: rgba(255,255,255,.06); border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
+}
+.cv-audio-icon svg {
+  width: 48px; height: 48px;
+  display: block; flex-shrink: 0;
 }
 .cv-audio-title { font-size: 17px; font-weight: 600; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cv-audio-meta { display: flex; gap: 10px; font-size: 13px; opacity: .45; }
@@ -931,12 +1315,20 @@
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   gap: 16px; min-height: 100%; padding: 8px 0;
 }
+.cv-pdf-spread {
+  display: flex; flex-direction: row; align-items: flex-start; justify-content: center;
+  gap: 12px; flex-shrink: 0;
+}
 .cv-pdf-canvas { box-shadow: 0 2px 12px rgba(0,0,0,.4); border-radius: 2px; max-width: 100%; }
-.cv-pdf-page-info { font-size: 12px; opacity: .7; padding: 0 6px; white-space: nowrap; min-width: 50px; text-align: center; cursor: pointer; }
+.cv-pdf-page-info {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; opacity: .7; padding: 0 6px; white-space: nowrap; min-width: 50px; text-align: center; cursor: pointer;
+  gap: 2px;
+}
 .cv-pdf-page-info .cv-pdf-page-current { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
 .cv-pdf-page-input {
-  width: 2.2em; min-width: 24px; max-width: 48px;
-  font-size: 12px; text-align: center; padding: 2px 4px;
+  width: 2.2em; min-width: 24px; max-width: 48px; height: 22px; line-height: 1;
+  font-size: 12px; text-align: center; padding: 2px 4px; vertical-align: middle;
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3);
   border-radius: 4px; color: inherit; box-sizing: border-box;
 }
@@ -995,6 +1387,8 @@
   background: #fff;
   display: flex; align-items: flex-start; justify-content: center;
   padding: 16px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .cv-inline-body {
   min-width: 100%; max-width: 100%;
@@ -1032,6 +1426,12 @@
   white-space: pre;
   overflow: visible;
   word-break: normal;
+  font-weight: 600;
+}
+/* Highlight.js: token spans inside .cv-inline-code keep layout (host loads a theme CSS) */
+.cv-inline-body .cv-inline-code [class*="hljs-"] {
+  display: inline;
+  font: inherit;
 }
 
 /* ── markdown (rendered as HTML) ─────────────────────────────────────── */
@@ -1043,6 +1443,8 @@
   font-size: 14px; line-height: 1.6;
   padding: 20px 24px;
   text-align: left;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .cv-markdown-body h1 { font-size: 1.5em; margin: 0 0 0.5em; }
 .cv-markdown-body h2 { font-size: 1.25em; margin: 1em 0 0.4em; }
@@ -1089,7 +1491,11 @@
    ═══════════════════════════════════════════════════════════════════════ */
 /* shell */
 .cv-theme-light { background: rgba(245,245,245,.95); }
-.cv-theme-light .cv-shell { color: #333; }
+.cv-theme-light .cv-shell {
+  color: #333;
+  background: rgba(255,255,255,.99);
+  box-shadow: 0 8px 48px rgba(0,0,0,.18);
+}
 .cv-theme-light .cv-theme-toggle { background: rgba(0,0,0,.06); color: #333; }
 .cv-theme-light .cv-theme-toggle:hover { background: rgba(0,0,0,.12); }
 .cv-theme-light .cv-theme-toggle:focus-visible { outline-color: #1a73e8; }
@@ -1219,6 +1625,13 @@
 .cv-theme-light .cv-poll-option-label-wrap input:focus-visible { outline-color: #1a73e8; }
 .cv-theme-light .cv-nav { background: rgba(255,255,255,.92); color: #333; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
 .cv-theme-light .cv-nav:hover { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.cv-theme-light .cv-nav:focus,
+.cv-theme-light .cv-nav:active,
+.cv-theme-light .cv-nav:focus-visible {
+  background: #fff !important;
+  color: #333 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
+}
 .cv-theme-light .cv-nav svg { stroke: #333; }
 
 /* toolbar */
@@ -1238,6 +1651,9 @@
 .cv-theme-light .cv-tb-btn { background: rgba(0,0,0,.06); color: #444; }
 .cv-theme-light .cv-tb-btn:hover { background: rgba(0,0,0,.12); }
 .cv-theme-light .cv-tb-btn.cv-active { background: rgba(66,133,244,.25); color: #1a73e8; }
+/* Scoped so active state wins over host project button styles */
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn.cv-active { background: rgba(66,133,244,.25) !important; color: #1a73e8 !important; }
+.cv-overlay.cv-theme-light .cv-toolbar .cv-tb-btn.cv-active:hover { background: rgba(66,133,244,.35) !important; color: #1a73e8 !important; }
 .cv-theme-light .cv-tb-sep { background: rgba(0,0,0,.1); }
 
 /* zoom */
@@ -1252,7 +1668,8 @@
 /* video */
 .cv-theme-light .cv-video-wrap { background: #111; }
 .cv-theme-light .cv-jp-big-play { color: #fff; }
-.cv-theme-light .cv-jp-big-play svg { background: rgba(0,0,0,.45); fill: #fff; }
+.cv-theme-light .cv-jp-big-play svg { background: rgba(100,100,100,.9); }
+.cv-theme-light .cv-jp-big-play:hover svg { background: rgba(120,120,120,.95); }
 .cv-theme-light .cv-jp-controls { background: linear-gradient(transparent, rgba(0,0,0,.65)); }
 .cv-theme-light .cv-jp-time { color: rgba(255,255,255,.75); }
 .cv-theme-light .cv-jp-progress { background: rgba(255,255,255,.25); }
@@ -1308,10 +1725,43 @@
 .cv-theme-dark { background: rgba(0,0,0,.88); }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   IMAGE EXTRACT-TEXT OVERLAY
+   ═══════════════════════════════════════════════════════════════════════ */
+.cv-extract-overlay {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.cv-extract-layer {
+  position: relative;
+  margin: 0; padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.cv-extract-word {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  background: rgba(255,245,157,.7);
+  color: #000;
+  border-radius: 2px;
+  user-select: text;
+  cursor: text;
+  pointer-events: auto;
+}
+.cv-theme-light .cv-extract-word {
+  background: rgba(255,245,157,.85);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .cv-shell { width: 100vw; height: 100vh; max-width: none; }
+  .cv-shell { width: 100vw; height: 100vh; max-width: none; border-radius: 0; }
   .cv-nav { width: 44px; height: 44px; }
   .cv-header { padding: 8px; }
   .cv-footer { padding: 6px 8px; flex-wrap: wrap; }

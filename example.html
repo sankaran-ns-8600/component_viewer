@@ -39,7 +39,7 @@
 <div class="page-title">
   <h1>ComponentViewer</h1>
   <p>Built-in image (zoom/pan), video (jPlayer), audio (jPlayer), PDF (pdf.js). Customer can override any via onRender or modify toolbar via onToolbar.</p>
-  <p style="font-size: 13px; margin-top: 8px;"><a href="documentation.html">documentation.html</a> — API and usage docs. <a href="example-japanese.html">example-japanese.html</a> — Same demo with <strong>Japanese (日本語) UI</strong> (I18N). <a href="example-jquery1.7.html">example-jquery1.7.html</a> — jQuery 1.7.1. <a href="example-pdf-2.2.html">example-pdf-2.2.html</a> — PDF.js 2.2. <a href="example-jplayer-2.5.html">example-jplayer-2.5.html</a> — jPlayer 2.5.</p>
+  <p style="font-size: 13px; margin-top: 8px;"><a href="documentation.html">documentation.html</a> — API and usage docs.</p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
@@ -48,7 +48,7 @@
 
 <div class="section-title">Case 1 — Built-in Renderers (image, video, audio, pdf)</div>
 <p class="section-desc">
-  All types rendered by the plugin. Image gets zoom slider + pan. Video/audio use jPlayer.
+  All types rendered by the plugin. First two images are <strong>landscape</strong> and <strong>portrait</strong> — click to see zoom/pan for both orientations. Image gets zoom slider + pan. Video/audio use jPlayer.
   PDF uses pdf.js with page nav, zoom, rotate, thumbnails. XLSX gets "no preview" card.
   Custom toolbarItems (Extract, Delete) appear alongside built-in toolbar items.
 </p>
@@ -82,9 +82,10 @@ $(<span class="str">'#post-builtin'</span>).<span class="fn">componentViewer</sp
     <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
     <div><div class="post-author">Alice — Built-in Renderers</div><div class="post-time">Now</div></div>
   </div>
-  <div class="post-body">Click any attachment to preview.</div>
+  <div class="post-body">Click any attachment to preview. First: <strong>Landscape</strong> (wide). Second: <strong>Portrait</strong> (tall). Third: Mountain (landscape). Then video, audio, PDF, XLSX.</div>
   <div class="post-attachments">
     <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Portrait.jpg" href="https://picsum.photos/id/29/1000/1600"><img src="https://picsum.photos/id/29/200/300" alt="" /></a>
     <a class="att cv-item" data-type="image" data-title="Mountain.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
     <div class="att cv-item" data-type="video" data-title="Demo.mp4" data-src="https://www.w3schools.com/html/mov_bbb.mp4" data-ext="MP4"><i class="fa-solid fa-film"></i><span class="att-label">Demo.mp4</span></div>
     <div class="att cv-item" data-type="audio" data-title="Horse.mp3" data-src="https://www.w3schools.com/html/horse.mp3" data-ext="MP3" data-size="45 KB"><i class="fa-solid fa-headphones"></i><span class="att-label">Horse.mp3</span></div>
@@ -477,6 +478,36 @@ $(<span class="str">'#post-pdf-autofit'</span>).<span class="fn">componentViewer
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
+     CASE 7b: PDF two-page view
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 8a — PDF two-page view</div>
+<p class="section-desc">
+  Set <code>pdf.twoPageView: true</code> to show a toolbar button that toggles single- and two-page view. The PDF opens in single-page view; click the button to switch to side-by-side (spreads). In two-page mode, pages are rendered in pairs (1–2, 3–4, …); the last page appears alone if the total is odd. Auto-fit scales so both pages fit in the stage.
+</p>
+
+<pre>
+$(<span class="str">'#post-pdf-twopage'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">pdf</span>: {
+    <span class="kw">workerSrc</span>: <span class="str">'pdf.worker.min.js'</span>,
+    <span class="kw">twoPageView</span>: <span class="kw">true</span>   <span class="cm">// side-by-side page spreads</span>
+  }
+});
+</pre>
+
+<div class="post" id="post-pdf-twopage">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-file-pdf"></i></div>
+    <div><div class="post-author">PDF two-page view</div><div class="post-time">Now</div></div>
+  </div>
+  <div class="post-body">Click to open — PDF shows two pages side-by-side (spread view).</div>
+  <div class="post-attachments">
+    <div class="att cv-item" data-type="pdf" data-title="Spec.pdf" data-src="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf" data-ext="PDF"><i class="fa-solid fa-file-pdf"></i><span class="att-label">Spec.pdf (two-page)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
      CASE 8: Video with custom thumbnail (poster) URL
      ═══════════════════════════════════════════════════════════════════ -->
 
@@ -558,8 +589,7 @@ $(<span class="str">'#post-video-hd'</span>).<span class="fn">componentViewer</s
 <p class="section-desc">
   When jPlayer and pdf.js are <strong>not</strong> loaded, the plugin still previews video, audio, and PDF:
   video and audio use native HTML5 <code>&lt;video&gt;</code> and <code>&lt;audio&gt;</code> with controls;
-  PDF is shown in an <code>&lt;iframe&gt;</code> (browser’s built-in viewer). No error container.
-  Open <a href="example-no-libs.html" target="_blank" rel="noopener">example-no-libs.html</a> to see it (same viewer, no jPlayer/pdf.js scripts).
+  PDF is shown in an <code>&lt;iframe&gt;</code> (browser’s built-in viewer). To try that, use a minimal page that loads only jQuery + the plugin (omit jPlayer and PDF.js). On <strong>this</strong> page, jPlayer and PDF.js are loaded, so Case 9 items use the rich players; the same markup would use native/iframe fallbacks without those scripts.
 </p>
 
 <pre>
@@ -579,8 +609,7 @@ $(<span class="str">'#post-no-libs'</span>).<span class="fn">componentViewer</sp
     <div><div class="post-author">Case 9 — Try without libraries</div><div class="post-time">Fallback demo</div></div>
   </div>
   <div class="post-body">
-    In this page, jPlayer and pdf.js are loaded, so video/audio/PDF use them. To see <strong>native HTML5 video/audio</strong> and <strong>iframe PDF</strong>, open
-    <a href="example-no-libs.html" target="_blank" rel="noopener">example-no-libs.html</a> (no jPlayer, no pdf.js).
+    On this page, jPlayer and pdf.js are loaded, so these attachments use the rich players. The same items would use <strong>native HTML5</strong> and <strong>iframe PDF</strong> if you initialized the viewer on a page without jPlayer/PDF.js.
   </div>
   <div class="post-attachments">
     <a class="att cv-item" data-type="image" data-title="Landscape.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
@@ -1338,10 +1367,11 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="section-title">Programmatic API</div>
 <div class="api-buttons">
-  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 0)">Case1: Image</button>
-  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 2)">Case1: Video</button>
-  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 3)">Case1: Audio</button>
-  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 4)">Case1: PDF</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 0)">Case1: Landscape</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 1)">Case1: Portrait</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 3)">Case1: Video</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 4)">Case1: Audio</button>
+  <button class="api-btn" onclick="$('#post-builtin').componentViewer('open', 5)">Case1: PDF</button>
   <button class="api-btn" onclick="$('#post-toolbar-shortcuts').componentViewer('open', 0)">Case1b: Custom shortcuts</button>
   <button class="api-btn" onclick="$('#post-ontoolbar').componentViewer('open', 2)">Case2: PDF+Share</button>
   <button class="api-btn" onclick="$('#post-onrender').componentViewer('open', 1)">Case3: Custom Video</button>
@@ -1356,10 +1386,11 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(2).componentViewer('open', 0)">Case6: PDF 1</button>
   <button class="api-btn" onclick="$('#post-single .cv-single-item').eq(3).componentViewer('open', 0)">Case6: PDF 2</button>
   <button class="api-btn" onclick="$('#post-pdf-autofit').componentViewer('open', 0)">Case7: PDF autoFit</button>
+  <button class="api-btn" onclick="$('#post-pdf-twopage').componentViewer('open', 0)">Case8a: PDF two-page</button>
   <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 0)">Case8: Video + thumb</button>
   <button class="api-btn" onclick="$('#post-video-thumb').componentViewer('open', 1)">Case8: Video no thumb</button>
   <button class="api-btn" onclick="$('#post-video-hd').componentViewer('open', 0)">Case8b: Video HD</button>
-  <button class="api-btn" onclick="window.open('example-no-libs.html','_blank')">Case9: Open no-libs example</button>
+  <button class="api-btn" onclick="$('#post-no-libs').componentViewer('open', 0)">Case9: Open (no-libs post)</button>
   <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 0)">Case10: Inline JS</button>
   <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 1)">Case10: Inline Java</button>
   <button class="api-btn" onclick="$('#post-inline').componentViewer('open', 2)">Case10: From URL (src)</button>
@@ -1804,6 +1835,15 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
     onOpen: function(item) { log('Case7 (PDF autoFit) onOpen [' + item.type + '] ' + item.title); }
   });
 
+  $('#post-pdf-twopage').componentViewer({
+    selector: '.cv-item',
+    toolbar: { download: true, zoom: true },
+    pdf: {
+      workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+      twoPageView: true
+    },
+    onOpen: function(item) { log('Case8a (PDF two-page) onOpen [' + item.type + '] ' + item.title); }
+  });
 
   /* ═══════════════════════════════════════════════════════════════
      CASE 8: Video with custom thumbnail (poster) URL
@@ -1828,13 +1868,13 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
   });
 
   /* ═══════════════════════════════════════════════════════════════
-     CASE 9: Same post (uses jPlayer/pdf.js on this page); see example-no-libs.html for fallback
+     CASE 9: Same markup; on this page jPlayer/pdf.js are loaded (rich players). Without those scripts → native video/audio + iframe PDF.
      ═══════════════════════════════════════════════════════════════ */
 
   $('#post-no-libs').componentViewer({
     toolbar: { download: true, zoom: true },
     pdf: { workerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js' },
-    onOpen: function(item) { log('Case9 onOpen [' + item.type + '] ' + item.title + ' (this page has libs; open example-no-libs.html for native/iframe)'); }
+    onOpen: function(item) { log('Case9 onOpen [' + item.type + '] ' + item.title + ' (this page uses jPlayer/pdf.js; omit them for native/iframe)'); }
   });
 
   /* ═══════════════════════════════════════════════════════════════
