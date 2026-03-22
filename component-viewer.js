@@ -4636,19 +4636,60 @@
     var src = getResolvedSrcUrl(item, inst) || item.src;
     var html = item.html;
     if (src && isSafeResourceUrl(src)) {
-      Overlay.$loader.addClass('cv-active');
       var titleAttr = (!isNullish(item.title) && String(item.title).trim() !== '') ? String(item.title).trim().replace(/"/g, '&quot;') : '';
-      var $wrap = $('<div class="cv-html-iframe-wrap" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>');
-      var $iframe = $('<iframe class="cv-html-iframe" style="width:100%;height:100%;border:none;"></iframe>').attr('src', src);
+      /* Full-stage iframe: .cv-stage-iframe is the embed hook (similar role to Colorbox .cboxIframe; do not reuse that class name). */
+      var $wrap = $('<div class="cv-html-iframe-wrap cv-html-iframe-loading"></div>');
+      /* Same spinner as overlay loader (.cv-spinner); in-stage panel like inline fetch uses .cv-inline-loading pattern. */
+      var $iframeLoader = $('<div class="cv-html-iframe-loader" aria-hidden="true"><div class="cv-spinner" role="presentation"></div></div>');
+      var $iframe = $('<iframe class="cv-html-iframe cv-stage-iframe"></iframe>');
       if (titleAttr) {
         $iframe.attr('title', titleAttr);
       }
+      if (inst && inst.opts && inst.opts.wcag) {
+        $iframe.attr('aria-busy', 'true');
+      }
+      var finished = false;
+      var fallbackTid = null;
+      var onIframeSettled = function () {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        if (fallbackTid !== null) {
+          clearTimeout(fallbackTid);
+          fallbackTid = null;
+        }
+        $iframe.off('.cvHtmlSrc');
+        setTimeout(function () {
+          if ($iframeLoader && $iframeLoader.length) {
+            $iframeLoader.remove();
+          }
+          $wrap.removeClass('cv-html-iframe-loading');
+        }, 500);
+        if (inst && inst.opts && inst.opts.wcag) {
+          $iframe.removeAttr('aria-busy');
+        }
+      };
+      $iframe.on('load.cvHtmlSrc', onIframeSettled);
+      $iframe.on('error.cvHtmlSrc', onIframeSettled);
+      $wrap.append($iframeLoader);
       $wrap.append($iframe);
       $stage.append($wrap);
-      setTimeout(function () {
-        Overlay.$loader.removeClass('cv-active');
-      }, 120);
-      return {};
+      /* Bind load/error before src so cached documents still notify. */
+      $iframe.attr('src', src);
+      fallbackTid = setTimeout(onIframeSettled, 120000);
+      return {
+        destroy: function () {
+          if (fallbackTid !== null) {
+            clearTimeout(fallbackTid);
+            fallbackTid = null;
+          }
+          $iframe.off('.cvHtmlSrc');
+          if (!finished) {
+            onIframeSettled();
+          }
+        }
+      };
     }
     if (isNullish(html) || (typeof html === 'string' && String(html).trim() === '')) {
       showError($stage, 'html', 'No HTML or src provided for html view', item);

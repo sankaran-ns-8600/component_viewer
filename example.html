@@ -714,6 +714,37 @@ $(<span class="str">'#post-html'</span>).<span class="fn">componentViewer</span>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
+     CASE 12b: HTML type with remote URL (full-stage iframe + loader until load)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 12b — HTML with <code>src</code> (iframe embed, e.g. Zoho WorkDrive)</div>
+<p class="section-desc">
+  When <code>type: 'html'</code> and <code>item.src</code> is set (and passes URL checks), the plugin renders a full-stage <code>&lt;iframe&gt;</code> with classes <code>cv-html-iframe</code> and <code>cv-stage-iframe</code>.
+  An <strong>in-stage</strong> panel (<code>cv-html-iframe-loader</code>) shows the same <code>cv-spinner</code> as the overlay loader (like inline <code>src</code> loading) until the iframe fires <code>load</code> or <code>error</code>. Below: sample <a href="https://workdrive.zohoexternal.com/embed/jkk888d994dde681f432cb38014a271551eb3" target="_blank" rel="noopener">WorkDrive embed URL</a> (external; requires network). If the embed blocks framing on your origin, the iframe may show an error page — that still counts as loaded and removes the spinner.
+</p>
+
+<pre>
+<span class="cm">// data-type="html" data-src="https://..." — item is built from DOM; no itemData required</span>
+$(<span class="str">'#post-html-iframe'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> },
+  <span class="kw">loop</span>: <span class="kw">false</span>
+});
+</pre>
+
+<div class="post" id="post-html-iframe">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-user"></i></div>
+    <div><div class="post-author">Case 12b — HTML iframe (<code>src</code>)</div><div class="post-time">WorkDrive embed</div></div>
+  </div>
+  <div class="post-body">Click to open a full-screen iframe preview. In-stage spinner (<code>cv-html-iframe-loader</code>) is removed after the embed finishes loading.</div>
+  <div class="post-attachments cv-single-item">
+    <div class="att cv-item" data-type="html" data-title="Zoho WorkDrive embed" data-src="https://workdrive.zohoexternal.com/embed/jkk888d994dde681f432cb38014a271551eb3">
+      <i class="fa-solid fa-cloud-arrow-up"></i><span class="att-label">WorkDrive embed</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
      CASE 13: Poll options (images with option label + radio/checkbox above toolbar)
      ═══════════════════════════════════════════════════════════════════ -->
 
@@ -1398,6 +1429,7 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-error').componentViewer('open', 0)">Case11: Cannot preview</button>
   <button class="api-btn" onclick="$('#post-html').componentViewer('open', 0)">Case12: With title</button>
   <button class="api-btn" onclick="$('#post-html').componentViewer('open', 1)">Case12: No title</button>
+  <button class="api-btn" onclick="$('#post-html-iframe').componentViewer('open', 0)">Case12b: HTML iframe (WorkDrive)</button>
   <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 0)">Case13: Poll (radio) A</button>
   <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 1)">Case13: Poll (radio) B</button>
   <button class="api-btn" onclick="$('#post-poll').componentViewer('open', 2)">Case13: Poll (radio) C</button>
@@ -1977,6 +2009,16 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
       return defaultItem;
     },
     onOpen: function(item) { log('Case12 onOpen [html] ' + (item.title || '(no title)')); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 12b: HTML with src → full-stage iframe (loader until iframe load)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-html-iframe').componentViewer({
+    toolbar: { download: true, zoom: true },
+    loop: false,
+    onOpen: function(item) { log('Case12b onOpen [html iframe] ' + (item.title || item.src || '')); }
   });
 
   /* ═══════════════════════════════════════════════════════════════

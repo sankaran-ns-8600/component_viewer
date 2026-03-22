@@ -1275,6 +1275,43 @@
 .cv-pdf-iframe {
   width: 100%; height: 100%; border: none; display: block;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HTML type (item.src URL → full-stage iframe)
+   .cv-stage-iframe: hook for styling the main embed (similar role to
+   Colorbox .cboxIframe — use this name, not cboxIframe).
+   ═══════════════════════════════════════════════════════════════════════ */
+.cv-html-iframe-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.cv-html-iframe.cv-stage-iframe,
+.cv-html-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+/* In-stage loading: same .cv-spinner as overlay loader; panel mirrors inline .cv-inline-loading placement. */
+.cv-html-iframe-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+/* Hide iframe visually while loader pane is shown */
+.cv-html-iframe-wrap.cv-html-iframe-loading .cv-html-iframe {
+  visibility: hidden;
+}
+
 .cv-pdf-sidebar {
   width: 160px; flex-shrink: 0; background: rgba(0,0,0,.3);
   overflow-y: auto; padding: 8px;
@@ -1664,6 +1701,7 @@
 
 /* loader */
 .cv-theme-light .cv-spinner { border-color: rgba(0,0,0,.1); border-top-color: rgba(0,0,0,.6); }
+.cv-theme-light .cv-html-iframe-loader { background: rgba(255, 255, 255, 0.55); }
 
 /* video */
 .cv-theme-light .cv-video-wrap { background: #111; }
