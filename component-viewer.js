@@ -50,11 +50,17 @@
 
     /** When true, show custom tooltips on hover for header/footer/toolbar buttons. When false, no tooltips. Tooltip text comes from defaultStrings (I18N) or, for custom toolbar items, from label (if given). Default true. */
     canShowTooltip: true,
+    /** When true, viewer UI is rendered in RTL mode (layout, nav keys/swipe, carousel direction). Default false. */
+    isRTL: false,
+    /** Minimize mode. When enabled, header button minimizes viewer into a floating restore icon. */
+    minimize: { enabled: false },
 
     toolbar: {
       download: true,
       zoom: true,
-      extractText: false
+      extractText: false,
+      /** When true and resolveMarkdownToggleUrl is set, html items with a .md-like extension and iframe src get a toolbar toggle (View Source / View Markdown) that swaps iframe URL. */
+      toggleSource: false
     },
 
     zoom: {
@@ -115,6 +121,13 @@
      */
     resolveUrl: null,
 
+    /**
+     * resolveMarkdownToggleUrl(item, viewer, isSource): optional. Used with toolbar.toggleSource for type html + markdown file (see isHtmlMarkdownFileItem logic).
+     * When the user toggles, the plugin sets iframe src to the returned URL. isSource is true when switching to raw/source view, false when switching back to rendered markdown.
+     * Return a non-empty string URL; return null/empty to cancel the toggle (button state unchanged).
+     */
+    resolveMarkdownToggleUrl: null,
+
     /** Full override: onRender renders into $stage; return { toolbar, destroy }. */
     onRender: null,
     /** onToolbar(item, defaultToolbar, viewer): modify toolbar; not called when onRender provides toolbar. */
@@ -174,7 +187,18 @@
      * beforeOpen(item, element, proceed): optional. If set, the overlay opens immediately with a circle loader (footer toolbar hidden) while your logic runs. Call proceed() or proceed({}) to load the item; call proceed({ gateContent: { html, onProceed? } }) to show gate HTML in the stage instead (toolbar stays hidden until the item loads). Same for open() / click / static $.componentViewer(...).componentViewer('open', 0). For items-only usage, element may be an empty jQuery set if item.$el is missing.
      *   proceed(openOptions): gateContent shows gated UI; otherwise openOptions become inst._openContext for resolveUrl etc.
      */
-    beforeOpen: null
+    beforeOpen: null,
+
+    /**
+     * beforeCollectItems(viewer[, proceed]): optional. Runs immediately before each rebuild of the items list (DOM scan or opts.items slice).
+     * Synchronous: function (viewer) { ... } — collection runs right after the function returns.
+     * Asynchronous: function (viewer, proceed) { ...; proceed(); } — you must call proceed() when ready (same pattern as beforeOpen).
+     * Omit this option to keep the default behavior (collect with no prior hook).
+     * While this hook runs, viewer._beforeCollectContext is set and cleared after collection:
+     *   { trigger: 'init'|'click'|'open'|'next'|'prev'|'goTo'|'refresh', $element?, originalEvent?, openArg? }
+     * For user clicks, trigger is 'click', $element is the matched attachment node (closest opts.selector to the click), originalEvent is the native click event (e.target may be a child).
+     */
+    beforeCollectItems: null
   };
 
   /* --- DEFAULT STRINGS (I18N) --- */
@@ -195,6 +219,8 @@
     zoomIn: 'Zoom in',
     switchToLightMode: 'Switch to light mode',
     switchToDarkMode: 'Switch to dark mode',
+    minimize: 'Minimize',
+    restoreViewer: 'Restore viewer',
     playSlideshow: 'Play slideshow',
     pauseSlideshow: 'Pause slideshow',
     download: 'Download',
@@ -221,6 +247,8 @@
     copiedToClipboard: 'Copied to clipboard',
     viewSource: 'View source',
     viewMarkdown: 'View as Markdown',
+    htmlMdToggleSource: 'View Source',
+    htmlMdToggleMarkdown: 'View Markdown',
     pdf: 'PDF',
     previewNotAvailable: 'Preview is not available for this file',
     file: 'File',
@@ -280,6 +308,8 @@
     themeDark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
     fullscreen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
     fullscreenExit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>',
+    minimize: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    restore: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="14" height="12" rx="2"/><path d="M10 5h9v9"/></svg>',
     play: '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>',
     comment: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
   };
@@ -388,11 +418,25 @@
     return false;
   }
 
-  function getItemDownloadUrl (item) {
+  /**
+   * URL used for toolbar / error-card download. Prefer explicit download URLs, then resolved src
+   * (host resolveUrl, e.g. html iframe query params), then raw item.src. Optional inst for resolveUrl.
+   */
+  function getItemDownloadUrl (item, inst) {
     if (!item) {
       return null;
     }
-    var url = item.downloadUrl || item.src;
+    var url = item.downloadUrl || item.download;
+    if (url && isSafeDownloadUrl(url)) {
+      return url;
+    }
+    if (inst) {
+      url = getResolvedUrl(item, inst, 'src');
+      if (url && isSafeDownloadUrl(url)) {
+        return url;
+      }
+    }
+    url = item.src;
     return (url && isSafeDownloadUrl(url)) ? url : null;
   }
 
@@ -430,7 +474,7 @@
       inst.opts.onDownload(item, inst); /* second arg: viewer */
       return;
     }
-    var url = getItemDownloadUrl(item);
+    var url = getItemDownloadUrl(item, inst);
     if (!url) {
       return;
     }
@@ -553,6 +597,54 @@
     return (/^(png|jpe?g|gif|webp|bmp|ico|svg)$/).test(ext);
   }
 
+  function isRtlEnabled (inst) {
+    return Boolean(inst && inst.opts && inst.opts.isRTL === true);
+  }
+
+  function buildOverlayClassName (theme, visible, closing, inst) {
+    var cls = 'cv-overlay cv-theme-' + theme;
+    if (isRtlEnabled(inst)) {
+      cls += ' cv-rtl';
+    }
+    if (visible) {
+      cls += ' cv-visible';
+    }
+    if (closing) {
+      cls += ' cv-closing';
+    }
+    return cls;
+  }
+
+  /**
+   * Update a footer toolbar button's visible label, hover tooltip, and optional WCAG aria-label.
+   * @param {jQuery} $btn - jQuery collection (typically one .cv-tb-btn)
+   * @param {object} inst - ComponentViewer instance (reads inst.opts.canShowTooltip, inst.opts.wcag)
+   * @param {object} opts
+   * @param {string} [opts.label] - Text for .cv-tb-label when that element exists (icon+label buttons)
+   * @param {string} [opts.tooltip] - data-cv-tooltip; when omitted, falls back to opts.label
+   */
+  function setToolbarBtnPresentation ($btn, inst, opts) {
+    if (!$btn || !$btn.length || !inst || !inst.opts || !opts) {
+      return;
+    }
+    var labelText = (opts.label !== undefined && opts.label !== null) ? String(opts.label) : '';
+    var tipText = (opts.tooltip !== undefined && opts.tooltip !== null) ? String(opts.tooltip) : labelText;
+    var ariaText = tipText || labelText;
+    if (!labelText && !tipText) {
+      return;
+    }
+    var $lbl = $btn.find('.cv-tb-label');
+    if ($lbl.length && labelText !== '') {
+      $lbl.text(labelText);
+    }
+    if (inst.opts.canShowTooltip !== false && tipText !== '') {
+      $btn.attr('data-cv-tooltip', tipText);
+    }
+    if (inst.opts.wcag && ariaText !== '') {
+      $btn.attr('aria-label', ariaText);
+    }
+  }
+
   /* --- SHARED OVERLAY --- */
 
   var Overlay = {
@@ -575,6 +667,7 @@
     _highResLoaded: false, _highResLoading: false, _highResSliderDebounceTimer: null,
     _isImageItem: false, _isPdfItem: false, _isCustomRendered: false,
     _swipeStartX: 0, _swipeStartY: 0, _swipeEndX: 0, _swipeEndY: 0, _swipeTracking: false,
+    _minimized: false, _minimizedSnapshot: null,
 
     ensure: function () {
       if (this.built) {
@@ -604,6 +697,7 @@
               '<button class="cv-comment-toggle" type="button" style="display:none">' + Icons.comment + '</button>' +
               '<button class="cv-carousel-toggle" type="button" style="display:none">' + Icons.thumbnails + '</button>' +
               '<button class="cv-fullscreen-toggle" type="button" style="display:none">' + Icons.fullscreen + '</button>' +
+              '<button class="cv-minimize-toggle" type="button" style="display:none">' + Icons.minimize + '</button>' +
               '<button class="cv-theme-toggle" type="button">' + Icons.themeLight + '</button>' +
               '<button class="cv-close" type="button">' + Icons.close + '</button></div>' +
             '</div>' +
@@ -649,11 +743,12 @@
             '<div class="cv-shortcuts-popup" role="dialog" aria-label="Keyboard shortcuts" aria-hidden="true"></div>' +
             '<div class="cv-strip-message" id="cv-strip-message" aria-live="polite" role="status"></div>' +
           '</div>' +
+          '<button class="cv-restore-fab" type="button" style="display:none">' + Icons.restore + '</button>' +
         '</div>';
 
       $('body').append(html);
       this.$el = $('.cv-overlay').last();
-      var sel = { $backdrop: '.cv-backdrop', $shell: '.cv-shell', $title: '.cv-title', $counter: '.cv-counter', $themeToggle: '.cv-theme-toggle', $fullscreenToggle: '.cv-fullscreen-toggle', $stageWrap: '.cv-stage-wrap', $stage: '.cv-stage', $commentWrap: '.cv-comment-wrap', $commentNav: '.cv-comment-nav', $commentPrev: '.cv-comment-prev', $commentNext: '.cv-comment-next', $commentCounter: '.cv-comment-counter', $commentTitle: '.cv-comment-title', $commentAuthor: '.cv-comment-author', $commentSep: '.cv-comment-sep', $commentInner: '.cv-comment-inner', $commentToggle: '.cv-comment-toggle', $loader: '.cv-loader', $prev: '.cv-nav-prev', $next: '.cv-nav-next', $carouselWrap: '.cv-carousel-wrap', $carousel: '.cv-carousel', $carouselToggle: '.cv-carousel-toggle', $carouselPrev: '.cv-carousel-prev', $carouselNext: '.cv-carousel-next', $footer: '.cv-footer', $pollOption: '.cv-poll-option', $footerRow: '.cv-footer-row', $toolbar: '.cv-toolbar', $stripMessage: '.cv-strip-message', $zoomWidget: '.cv-zoom-widget', $zoomSlider: '.cv-zoom-slider', $zoomPct: '.cv-zoom-pct', $slideshowProgressWrap: '.cv-slideshow-progress-wrap', $slideshowProgressBar: '.cv-slideshow-progress-bar', $shortcutsPopup: '.cv-shortcuts-popup' };
+      var sel = { $backdrop: '.cv-backdrop', $shell: '.cv-shell', $title: '.cv-title', $counter: '.cv-counter', $themeToggle: '.cv-theme-toggle', $fullscreenToggle: '.cv-fullscreen-toggle', $minimizeToggle: '.cv-minimize-toggle', $restoreFab: '.cv-restore-fab', $stageWrap: '.cv-stage-wrap', $stage: '.cv-stage', $commentWrap: '.cv-comment-wrap', $commentNav: '.cv-comment-nav', $commentPrev: '.cv-comment-prev', $commentNext: '.cv-comment-next', $commentCounter: '.cv-comment-counter', $commentTitle: '.cv-comment-title', $commentAuthor: '.cv-comment-author', $commentSep: '.cv-comment-sep', $commentInner: '.cv-comment-inner', $commentToggle: '.cv-comment-toggle', $loader: '.cv-loader', $prev: '.cv-nav-prev', $next: '.cv-nav-next', $carouselWrap: '.cv-carousel-wrap', $carousel: '.cv-carousel', $carouselToggle: '.cv-carousel-toggle', $carouselPrev: '.cv-carousel-prev', $carouselNext: '.cv-carousel-next', $footer: '.cv-footer', $pollOption: '.cv-poll-option', $footerRow: '.cv-footer-row', $toolbar: '.cv-toolbar', $stripMessage: '.cv-strip-message', $zoomWidget: '.cv-zoom-widget', $zoomSlider: '.cv-zoom-slider', $zoomPct: '.cv-zoom-pct', $slideshowProgressWrap: '.cv-slideshow-progress-wrap', $slideshowProgressBar: '.cv-slideshow-progress-bar', $shortcutsPopup: '.cv-shortcuts-popup' };
       for (var p in sel) {
         this[p] = sel[p].charAt(0) === '#' ? $(sel[p]) : this.$el.find(sel[p]);
       }
@@ -662,6 +757,107 @@
       this._bindEvents();
       this._bindTooltip();
       this.built = true;
+    },
+
+    _isRtl: function (inst) {
+      var ctx = inst || this.activeInstance;
+      return isRtlEnabled(ctx);
+    },
+    _canMinimize: function (inst) {
+      var cfg = inst && inst.opts && inst.opts.minimize;
+      return Boolean(cfg && cfg.enabled !== false);
+    },
+    _captureMinimizedSnapshot: function (inst) {
+      if (!inst || !inst.items || inst.idx < 0 || inst.idx >= inst.items.length) {
+        this._minimizedSnapshot = null;
+        return;
+      }
+      var listSnapshot = [];
+      for (var i = 0; i < inst.items.length; i++) {
+        var cloned = $.extend(true, {}, inst.items[i]);
+        if (cloned.$el) {
+          delete cloned.$el;
+        }
+        listSnapshot.push(cloned);
+      }
+      var current = inst.items[inst.idx];
+      var snapItem = $.extend(true, {}, current);
+      if (snapItem.$el) {
+        delete snapItem.$el;
+      }
+      this._minimizedSnapshot = {
+        items: listSnapshot,
+        item: snapItem,
+        $el: current && current.$el ? current.$el : null,
+        idx: inst.idx
+      };
+    },
+    _applyMinimizedUi: function (inst, minimized) {
+      this._minimized = Boolean(minimized);
+      this.$el.toggleClass('cv-minimized', this._minimized);
+      this.$restoreFab.toggle(this._minimized);
+      if (this.visible) {
+        if (this._minimized) {
+          document.body.style.overflow = !isNullish(this._bodyOverflow) ? this._bodyOverflow : '';
+        } else {
+          document.body.style.overflow = 'hidden';
+        }
+      }
+      if (!inst) {
+        return;
+      }
+      if (inst.opts.canShowTooltip !== false) {
+        this.$minimizeToggle.attr('data-cv-tooltip', str(inst, 'minimize'));
+        this.$restoreFab.attr('data-cv-tooltip', str(inst, 'restoreViewer'));
+      } else {
+        this.$minimizeToggle.removeAttr('data-cv-tooltip');
+        this.$restoreFab.removeAttr('data-cv-tooltip');
+      }
+      if (inst.opts.wcag) {
+        this.$minimizeToggle.attr('aria-label', str(inst, 'minimize'));
+        this.$restoreFab.attr('aria-label', str(inst, 'restoreViewer'));
+      } else {
+        this.$minimizeToggle.removeAttr('aria-label');
+        this.$restoreFab.removeAttr('aria-label');
+      }
+    },
+    _restoreFromMinimized: function () {
+      var self = this;
+      var inst = this.activeInstance;
+      if (!inst) {
+        return;
+      }
+      this._applyMinimizedUi(inst, false);
+      var snap = this._minimizedSnapshot;
+      inst._beforeCollectContext = { trigger: 'restore' };
+      inst._collectItems(function () {
+        if (!inst.items.length && snap && snap.items && snap.items.length) {
+          inst.items = $.extend(true, [], snap.items);
+          inst.idx = Math.max(0, Math.min((!isNullish(snap.idx) ? snap.idx : 0), inst.items.length - 1));
+          self.loadItem();
+          return;
+        }
+        if (!inst.items.length) {
+          return;
+        }
+        var restoreIdx = Math.max(0, Math.min(inst.idx, inst.items.length - 1));
+        if (snap && snap.$el && snap.$el.length) {
+          for (var i = 0; i < inst.items.length; i++) {
+            if (inst.items[i].$el && inst.items[i].$el[0] === snap.$el[0]) {
+              restoreIdx = i;
+              break;
+            }
+          }
+          if (snap.$el[0] && (!$.contains(document, snap.$el[0]) || !snap.$el.is(':visible')) && snap.items && snap.items.length) {
+            inst.items = $.extend(true, [], snap.items);
+            inst.idx = Math.max(0, Math.min((!isNullish(snap.idx) ? snap.idx : 0), inst.items.length - 1));
+            self.loadItem();
+            return;
+          }
+        }
+        inst.idx = restoreIdx;
+        self.loadItem();
+      });
     },
 
     _bindKeydownCaptureOnce: function () {
@@ -726,11 +922,11 @@
         return true;
       }
       if (e.key === 'ArrowLeft') {
-        self._nav('prev');
+        self._nav(self._isRtl() ? 'next' : 'prev');
         return true;
       }
       if (e.key === 'ArrowRight') {
-        self._nav('next');
+        self._nav(self._isRtl() ? 'prev' : 'next');
         return true;
       }
       var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
@@ -920,7 +1116,7 @@
         var current = inst.opts.theme || 'dark';
         var next = current === 'dark' ? 'light' : 'dark';
         inst.opts.theme = next;
-        self.$el[0].className = 'cv-overlay cv-visible cv-theme-' + next;
+        self.$el[0].className = buildOverlayClassName(next, true, false, inst);
         self._syncThemeToggle();
         if (typeof inst.opts.onThemeChange === 'function') {
           inst.opts.onThemeChange(next, inst);
@@ -947,6 +1143,21 @@
           return;
         }
         self._toggleOverlayFullscreen();
+      });
+      this.$minimizeToggle.on('click', function (e) {
+        e.preventDefault();
+        if (!self.activeInstance || !self._canMinimize(self.activeInstance)) {
+          return;
+        }
+        self._captureMinimizedSnapshot(self.activeInstance);
+        self._applyMinimizedUi(self.activeInstance, true);
+      });
+      this.$restoreFab.on('click', function (e) {
+        e.preventDefault();
+        if (!self.activeInstance) {
+          return;
+        }
+        self._restoreFromMinimized();
       });
       this.$commentToggle.on('click', function (e) {
         e.preventDefault();
@@ -981,17 +1192,11 @@
       });
       this.$carouselPrev.on('click', function (e) {
         e.preventDefault();
-        var el = self.$carousel[0];
-        if (el) {
-          el.scrollLeft -= (104 + 10) * 5;
-        }
+        self._scrollCarouselBy(-(104 + 10) * 5);
       });
       this.$carouselNext.on('click', function (e) {
         e.preventDefault();
-        var el = self.$carousel[0];
-        if (el) {
-          el.scrollLeft += (104 + 10) * 5;
-        }
+        self._scrollCarouselBy((104 + 10) * 5);
       });
       this.$prev.on('click', function () {
         self._nav('prev');
@@ -1156,12 +1361,12 @@
           if (self._isGifItem()) {
             self._panX = 0; self._panY = 0;
           } else {
-            var midX = (t[0].clientX + t[1].clientX) / 2;
-            var midY = (t[0].clientY + t[1].clientY) / 2;
-            var rect = self.$stageWrap[0].getBoundingClientRect();
-            var cx = midX - rect.left - rect.width / 2;
-            var cy = midY - rect.top - rect.height / 2;
-            var ratio = nz / self._zoom;
+          var midX = (t[0].clientX + t[1].clientX) / 2;
+          var midY = (t[0].clientY + t[1].clientY) / 2;
+          var rect = self.$stageWrap[0].getBoundingClientRect();
+          var cx = midX - rect.left - rect.width / 2;
+          var cy = midY - rect.top - rect.height / 2;
+          var ratio = nz / self._zoom;
             self._panX = self._pinchMidStartX - ratio * (self._pinchMidStartX - self._pinchPanStartX) + (cx - self._pinchMidStartX);
             self._panY = self._pinchMidStartY - ratio * (self._pinchMidStartY - self._pinchPanStartY) + (cy - self._pinchMidStartY);
           }
@@ -1208,7 +1413,7 @@
             self.close();
           } else if (inst && inst.items.length > 1 && inst.opts.swipeNav !== false && !(self._isImageItem && self._zoom > 1) && Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy)) {
             e.preventDefault();
-            self._nav(dx > 0 ? 'prev' : 'next', true);
+            self._nav(self._isRtl(inst) ? (dx > 0 ? 'next' : 'prev') : (dx > 0 ? 'prev' : 'next'), true);
           }
           self._swipeTracking = false;
         }
@@ -1301,6 +1506,8 @@
         if (top < 8) {
           top = rect.bottom + 6;
         }
+        var maxLeft = Math.max(8, window.innerWidth - tipRect.width - 8);
+        left = Math.max(8, Math.min(maxLeft, left));
         self.$tooltip.css({ left: left + 'px', top: top + 'px' });
       }
       function hideTip () {
@@ -1332,7 +1539,9 @@
         }
       };
       var fsEl = getFullscreenElement();
-      var tips = [[this.$el.find('.cv-close'), 'close'], [this.$carouselToggle, 'attachments'], [this.$fullscreenToggle, fsEl === this.$el[0] ? 'exitFullscreen' : 'fullscreen'], [this.$themeToggle, (inst.opts.theme || 'dark') === 'dark' ? 'switchToLightMode' : 'switchToDarkMode'], [this.$prev, 'previousItem'], [this.$next, 'nextItem'], [this.$carouselPrev, 'scrollCarouselLeft'], [this.$carouselNext, 'scrollCarouselRight'], [this.$el.find('.cv-zoom-out-btn'), 'zoomOut'], [this.$zoomSlider, 'zoomLevel'], [this.$el.find('.cv-zoom-in-btn'), 'zoomIn']];
+      var carouselPrevTip = this._isRtl(inst) ? 'scrollCarouselRight' : 'scrollCarouselLeft';
+      var carouselNextTip = this._isRtl(inst) ? 'scrollCarouselLeft' : 'scrollCarouselRight';
+      var tips = [[this.$el.find('.cv-close'), 'close'], [this.$carouselToggle, 'attachments'], [this.$fullscreenToggle, fsEl === this.$el[0] ? 'exitFullscreen' : 'fullscreen'], [this.$themeToggle, (inst.opts.theme || 'dark') === 'dark' ? 'switchToLightMode' : 'switchToDarkMode'], [this.$prev, 'previousItem'], [this.$next, 'nextItem'], [this.$carouselPrev, carouselPrevTip], [this.$carouselNext, carouselNextTip], [this.$el.find('.cv-zoom-out-btn'), 'zoomOut'], [this.$zoomSlider, 'zoomLevel'], [this.$el.find('.cv-zoom-in-btn'), 'zoomIn']];
       for (var i = 0; i < tips.length; i++) {
         set(tips[i][0], tips[i][1]);
       }
@@ -1347,6 +1556,19 @@
         this.activeInstance.prev(opts);
       } else {
         this.activeInstance.next(opts);
+      }
+    },
+
+    _scrollCarouselBy: function (stepPx, inst) {
+      var el = this.$carousel && this.$carousel[0];
+      if (!el) {
+        return;
+      }
+      var directionStep = this._isRtl(inst) ? -stepPx : stepPx;
+      if (typeof el.scrollBy === 'function') {
+        el.scrollBy({ left: directionStep, behavior: 'smooth' });
+      } else {
+        el.scrollLeft += directionStep;
       }
     },
 
@@ -1460,7 +1682,7 @@
       }
       var item = inst.items[inst.idx];
       var resolvedZoom = getResolvedUrl(item, inst, 'zoomUrl');
-      var highResUrl = (resolvedZoom && isSafeResourceUrl(resolvedZoom)) ? resolvedZoom : ((item.zoomUrl && isSafeResourceUrl(item.zoomUrl)) ? item.zoomUrl : null) || getItemDownloadUrl(item);
+      var highResUrl = (resolvedZoom && isSafeResourceUrl(resolvedZoom)) ? resolvedZoom : ((item.zoomUrl && isSafeResourceUrl(item.zoomUrl)) ? item.zoomUrl : null) || getItemDownloadUrl(item, inst);
       if (!highResUrl) {
         return;
       }
@@ -1512,6 +1734,7 @@
       this.ensure();
       this.activeInstance = instance;
       this._swipeTracking = false;
+      this._minimizedSnapshot = null;
       if (instance.opts.wcag) {
         this._focusBeforeOpen = document.activeElement;
         this.$el[0].setAttribute('aria-hidden', 'false');
@@ -1528,8 +1751,8 @@
         this.$el.find('.cv-zoom-out-btn').attr('aria-label', str(instance, 'zoomOut'));
         this.$el.find('.cv-zoom-slider').attr('aria-label', str(instance, 'zoomLevel'));
         this.$el.find('.cv-zoom-in-btn').attr('aria-label', str(instance, 'zoomIn'));
-        this.$carouselPrev.attr('aria-label', str(instance, 'scrollCarouselLeft'));
-        this.$carouselNext.attr('aria-label', str(instance, 'scrollCarouselRight'));
+        this.$carouselPrev.attr('aria-label', str(instance, this._isRtl(instance) ? 'scrollCarouselRight' : 'scrollCarouselLeft'));
+        this.$carouselNext.attr('aria-label', str(instance, this._isRtl(instance) ? 'scrollCarouselLeft' : 'scrollCarouselRight'));
       } else {
         this.$el[0].removeAttribute('aria-hidden');
         this.$shell[0].removeAttribute('role');
@@ -1545,7 +1768,9 @@
         this.$commentToggle.removeAttr('aria-label');
       }
       var theme = instance.opts.theme || 'dark';
-      this.$el[0].className = 'cv-overlay cv-theme-' + theme;
+      this.$el[0].className = buildOverlayClassName(theme, false, false, instance);
+      this.$el.attr('dir', this._isRtl(instance) ? 'rtl' : 'ltr');
+      this.$shell.attr('dir', this._isRtl(instance) ? 'rtl' : 'ltr');
       this.$themeToggle.toggle(instance.opts.themeToggle !== false);
       this._syncThemeToggle();
       var zo = instance.opts.zoom || DEFAULTS.zoom;
@@ -1563,8 +1788,10 @@
         this.$carouselWrap.removeClass('cv-open');
       }
       this.$fullscreenToggle.toggle(instance.opts.fullscreen !== false);
+      this.$minimizeToggle.toggle(this._canMinimize(instance));
       this._syncFullscreenToggle();
       this._applyTooltips(instance);
+      this._applyMinimizedUi(instance, false);
       if (this._stageOnlyEnabled(instance)) {
         this.$shell.addClass('cv-stage-only');
       } else {
@@ -1578,7 +1805,9 @@
       this.$el.addClass('cv-visible');
       this.visible = true;
       /* Prevent page scroll behind overlay (QMS / UX) */
-      this._bodyOverflow = document.body.style.overflow;
+      if (isNullish(this._bodyOverflow)) {
+        this._bodyOverflow = document.body.style.overflow;
+      }
       document.body.style.overflow = 'hidden';
       var self = this;
       $(window).off('resize.cv-extract-overlay').on('resize.cv-extract-overlay', function () {
@@ -1597,7 +1826,7 @@
       } else if (instance._pendingGateContent && instance._pendingGateContent.html) {
         this._showGateContent(instance);
       } else {
-        this.loadItem();
+      this.loadItem();
       }
       if (instance.opts.wcag) {
         var self = this;
@@ -1927,6 +2156,8 @@
         }
       }
       var self = this;
+      this._applyMinimizedUi(inst, false);
+      this._minimizedSnapshot = null;
       this.$el.addClass('cv-closing');
       if (typeof inst.opts.onCleanup === 'function' && item) {
         inst.opts.onCleanup(item, inst);
@@ -2283,10 +2514,8 @@
         }
         var $slideBtn = this.$toolbar.find('.cv-slideshow-btn');
         if ($slideBtn.length) {
-          $slideBtn.find('.cv-tb-label').text(str(inst, 'pauseSlideshow'));
-          if (inst.opts.canShowTooltip !== false) {
-            $slideBtn.attr('data-cv-tooltip', str(inst, 'pauseSlideshow'));
-          }
+          var pauseSlideshowStr = str(inst, 'pauseSlideshow');
+          setToolbarBtnPresentation($slideBtn, inst, { label: pauseSlideshowStr, tooltip: pauseSlideshowStr });
         }
       } else {
         this._stopSlideshowProgress();
@@ -2362,10 +2591,8 @@
               clearTimeout(inst._slideshowTimer); inst._slideshowTimer = null;
             }
             self._stopSlideshowProgress();
-            $btn.find('.cv-tb-label').text(str(inst, 'playSlideshow'));
-            if (inst.opts.canShowTooltip !== false) {
-              $btn.attr('data-cv-tooltip', str(inst, 'playSlideshow'));
-            }
+            var playSlideshowStr = str(inst, 'playSlideshow');
+            setToolbarBtnPresentation($btn, inst, { label: playSlideshowStr, tooltip: playSlideshowStr });
           } else {
             inst._slideshowPaused = false;
             inst._slideshowPlaying = true;
@@ -2377,10 +2604,8 @@
             if (ss.showProgress) {
               self._startSlideshowProgress(intervalMs);
             }
-            $btn.find('.cv-tb-label').text(str(inst, 'pauseSlideshow'));
-            if (inst.opts.canShowTooltip !== false) {
-              $btn.attr('data-cv-tooltip', str(inst, 'pauseSlideshow'));
-            }
+            var pauseSlideshowStr2 = str(inst, 'pauseSlideshow');
+            setToolbarBtnPresentation($btn, inst, { label: pauseSlideshowStr2, tooltip: pauseSlideshowStr2 });
           }
         }
       };
@@ -2394,10 +2619,53 @@
         var slideBtn = this._slideshowButtonItem(inst);
         var htmlCi = inst.items[inst.idx];
         var htmlTbOpts = inst.opts.toolbar || {};
-        var showHtmlDownload = (htmlTbOpts.download !== false) && getItemDownloadUrl(htmlCi);
+        var showHtmlDownload = (htmlTbOpts.download !== false) && getItemDownloadUrl(htmlCi, inst);
         var htmlToolbarItems = slideBtn ? [slideBtn] : [];
+        var overlayHtml = this;
+        if (shouldShowHtmlMdSourceToolbarButton(htmlCi, inst)) {
+          inst._htmlMdShowingSource = false;
+          if (htmlToolbarItems.length) {
+            htmlToolbarItems.push('separator');
+          }
+          htmlToolbarItems.push({
+            id: 'html-md-source',
+            icon: Icons.extractText,
+            label: str(inst, 'htmlMdToggleSource'),
+            showLabel: false,
+            onClick: function (clickedItem, viewerInst) {
+              var urlFn = viewerInst.opts.resolveMarkdownToggleUrl;
+              if (typeof urlFn !== 'function') {
+                return;
+              }
+              var nextSource = !viewerInst._htmlMdShowingSource;
+              var url = urlFn(clickedItem, viewerInst, nextSource);
+              if (isNullish(url) || String(url).trim() === '') {
+                return;
+              }
+              viewerInst._htmlMdShowingSource = nextSource;
+              var $iframe = overlayHtml.$stage.find('iframe.cv-html-iframe');
+              if ($iframe.length) {
+                $iframe.attr('src', String(url).trim());
+              }
+              var $btn = overlayHtml.$toolbar.find('.cv-tb-html-md-source'); /* id html-md-source */
+              var inSource = viewerInst._htmlMdShowingSource;
+              var lbl = inSource ? str(viewerInst, 'htmlMdToggleMarkdown') : str(viewerInst, 'htmlMdToggleSource');
+              $btn.toggleClass('cv-active', Boolean(inSource));
+              setToolbarBtnPresentation($btn, viewerInst, { tooltip: lbl });
+            }
+          });
+        }
         this._buildToolbar(inst, htmlToolbarItems, showHtmlDownload);
-        this.$footer.toggle(htmlToolbarItems.length > 0 || showHtmlDownload);
+        /* After build: rely on real toolbar nodes (download may be present even if flags desynced).
+           Keep footer visible when slideshow progress bar is used (it lives inside .cv-footer). */
+        var hasHtmlToolbarContent = this.$toolbar.children().length > 0;
+        var ssHtml = inst.opts.slideshow;
+        var htmlFooterForProgress = Boolean(ssHtml && ssHtml.enabled && ssHtml.showProgress && inst.items && inst.items.length > 1);
+        if (hasHtmlToolbarContent || htmlFooterForProgress) {
+          this.$footer.show();
+        } else {
+        this.$footer.hide();
+        }
         return;
       }
       if (result && result.imageError) {
@@ -2510,9 +2778,9 @@
                 inst._markdownViewMode = 'rendered';
               }
               var $btn = self.$toolbar.find('.cv-tb-markdown-toggle');
-              if ($btn.length && inst.opts.canShowTooltip !== false) {
-                var lbl = inst._markdownViewMode === 'rendered' ? str(inst, 'viewSource') : str(inst, 'viewMarkdown');
-                $btn.attr('data-cv-tooltip', lbl);
+              if ($btn.length) {
+                var lblMd = inst._markdownViewMode === 'rendered' ? str(inst, 'viewSource') : str(inst, 'viewMarkdown');
+                setToolbarBtnPresentation($btn, inst, { tooltip: lblMd });
               }
             }
           });
@@ -2549,19 +2817,31 @@
                         return;
                       }
                       removeExtractOverlay(self.$stage);
-                      var $img = self.$stage.find('.cv-image');
-                      var $overlay = buildExtractOverlay($img, resp);
-                      if ($overlay) {
-                        var $wrap = $img.closest('.cv-img-wrap');
-                        if ($wrap.length) {
-                          $overlay.find('.cv-extract-layer').css({
-                            width: $img.width(),
-                            height: $img.height()
-                          });
-                          $wrap.append($overlay);
-                          self.$toolbar.find('.cv-tb-extract-text').addClass('cv-active');
-                        }
-                      }
+                      /* Wait for layout after loader so img clientWidth/height reflect final box */
+                      requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                          var $img = self.$stage.find('.cv-image');
+                          var $overlay = buildExtractOverlay($img, resp);
+                          if ($overlay) {
+                            var $wrap = $img.closest('.cv-img-wrap');
+                            if ($wrap.length) {
+                              var imgEl = $img[0];
+                              var syncMetrics = imgEl ? getCvImageContentMetrics(imgEl) : null;
+                              if (syncMetrics) {
+                                /* Same box + transform as .cv-image so letterboxed coords and zoom/pan stay aligned */
+                                $overlay.css({
+                                  width: syncMetrics.cw,
+                                  height: syncMetrics.ch,
+                                  transformOrigin: '50% 50%',
+                                  transform: 'translate(-50%, -50%) translate(' + (self._panX || 0) + 'px,' + (self._panY || 0) + 'px) scale(' + (self._zoom || 1) + ')'
+                                });
+                              }
+                              $wrap.append($overlay);
+                              self.$toolbar.find('.cv-tb-extract-text').addClass('cv-active');
+                            }
+                          }
+                        });
+                      });
                     }, function (message) {
                       self.$loader.removeClass('cv-active');
                       self._showStripMessage(message || '');
@@ -2583,7 +2863,7 @@
 
         /* Show download button only if toolbar.download is enabled and item has a download URL (from itemData) */
         var ci = inst.items[inst.idx];
-        var showDownload = (tbOpts.download !== false) && getItemDownloadUrl(ci);
+        var showDownload = (tbOpts.download !== false) && getItemDownloadUrl(ci, inst);
         this._buildToolbar(inst, items, showDownload);
       }
 
@@ -2616,7 +2896,7 @@
       if (isSelected) {
         if (mode === 'radio') {
           inst._pollSelectedValue = value;
-        } else {
+      } else {
           inst._pollSelectedSet.add(value);
         }
       }
@@ -2712,8 +2992,13 @@
 
       list.push({ key: 'Escape', label: str(inst, 'close') });
       if (inst.items.length > 1) {
-        list.push({ key: 'ArrowLeft', label: str(inst, 'previousItem') });
-        list.push({ key: 'ArrowRight', label: str(inst, 'nextItem') });
+        if (this._isRtl(inst)) {
+          list.push({ key: 'ArrowLeft', label: str(inst, 'nextItem') });
+          list.push({ key: 'ArrowRight', label: str(inst, 'previousItem') });
+        } else {
+          list.push({ key: 'ArrowLeft', label: str(inst, 'previousItem') });
+          list.push({ key: 'ArrowRight', label: str(inst, 'nextItem') });
+        }
       }
       if (this._isImageItem && !this._isCustomRendered && tbOpts.zoom !== false) {
         list.push({ key: '+', label: str(inst, 'zoomIn') });
@@ -2990,9 +3275,135 @@
 
   /* --- IMAGE EXTRACT-TEXT OVERLAY --- */
 
+  function parsePositiveDim (v) {
+    if (v === null || v === undefined || v === '') {
+      return 0;
+    }
+    var n = (typeof v === 'number') ? v : parseFloat(String(v).replace(/,/g, ''));
+    return (isFinite(n) && n > 0) ? n : 0;
+  }
+
+  /** Axis-aligned bbox from 4 (or N) corner points — order-independent vs fixed [tl,tr,br,bl]. */
+  function extractWordBboxFromBox (box) {
+    if (!box || !box.length) {
+      return null;
+    }
+    var minX = Infinity;
+    var minY = Infinity;
+    var maxX = -Infinity;
+    var maxY = -Infinity;
+    for (var i = 0; i < box.length; i++) {
+      var pt = box[i];
+      if (!pt || pt.length < 2) {
+        continue;
+      }
+      var x = Number(pt[0]);
+      var y = Number(pt[1]);
+      if (isNaN(x) || isNaN(y)) {
+        continue;
+      }
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+    if (!isFinite(minX) || !isFinite(minY)) {
+      return null;
+    }
+    return { x: minX, y: minY, w: Math.max(0, maxX - minX), h: Math.max(0, maxY - minY) };
+  }
+
+  function scanLinesMaxExtents (lines) {
+    var maxX = 0;
+    var maxY = 0;
+    for (var i = 0, il = lines.length; i < il; i++) {
+      var line = lines[i];
+      if (!line || !line.length) {
+        continue;
+      }
+      for (var w = 0, wl = line.length; w < wl; w++) {
+        var box = (line[w] && line[w].box) || [];
+        for (var b = 0; b < box.length; b++) {
+          var pt = box[b];
+          if (!pt || pt.length < 2) {
+            continue;
+          }
+          var x = Number(pt[0]);
+          var y = Number(pt[1]);
+          if (!isNaN(x)) {
+            maxX = Math.max(maxX, x);
+          }
+          if (!isNaN(y)) {
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+    }
+    return { maxX: maxX, maxY: maxY };
+  }
+
+  /**
+   * Map OCR coords to the on-screen &lt;img&gt; element.
+   * .cv-image uses object-fit:contain — letterboxing inside clientWidth × clientHeight.
+   */
+  function getCvImageContentMetrics (imgEl) {
+    /* Force layout so clientWidth/height match current box (offset read must run before client*) */
+    var reflowTrigger = imgEl.offsetWidth + imgEl.offsetHeight;
+    if (!isFinite(reflowTrigger)) {
+      return null;
+    }
+    var nw = imgEl.naturalWidth;
+    var nh = imgEl.naturalHeight;
+    var cw = imgEl.clientWidth;
+    var ch = imgEl.clientHeight;
+    if (!nw || !nh || !cw || !ch) {
+      return null;
+    }
+    var fitScale = Math.min(cw / nw, ch / nh);
+    var dispW = nw * fitScale;
+    var dispH = nh * fitScale;
+    return {
+      nw: nw,
+      nh: nh,
+      cw: cw,
+      ch: ch,
+      fitScale: fitScale,
+      dispW: dispW,
+      dispH: dispH,
+      offsetX: (cw - dispW) / 2,
+      offsetY: (ch - dispH) / 2
+    };
+  }
+
+  function resolveOcrReferenceSize (data, resp, lines, nw, nh) {
+    var refW = parsePositiveDim(
+      data.imageWidth || data.sourceWidth || data.width || data.pageWidth ||
+      data.ocrWidth || (resp && (resp.imageWidth || resp.sourceWidth || resp.width))
+    );
+    var refH = parsePositiveDim(
+      data.imageHeight || data.sourceHeight || data.height || data.pageHeight ||
+      data.ocrHeight || (resp && (resp.imageHeight || resp.sourceHeight || resp.height))
+    );
+    if (!refW) {
+      refW = nw;
+    }
+    if (!refH) {
+      refH = nh;
+    }
+    /* OCR often runs on the full file while the viewer shows a smaller preview — coords can exceed naturalWidth */
+    var ext = scanLinesMaxExtents(lines);
+    if (ext.maxX > nw + 0.5) {
+      refW = Math.max(refW, ext.maxX);
+    }
+    if (ext.maxY > nh + 0.5) {
+      refH = Math.max(refH, ext.maxY);
+    }
+    return { refW: refW, refH: refH };
+  }
+
   function buildExtractOverlay ($img, resp) {
     var data = (resp && resp.data) || {};
-    var lines = data.lines;
+    var lines = data.lines || (resp && resp.lines);
     if (!lines || !lines.length) {
       return null;
     }
@@ -3000,39 +3411,48 @@
     if (!el) {
       return null;
     }
-    var nw = el.naturalWidth;
-    var nh = el.naturalHeight;
-    var rw = $img.width();
-    var rh = $img.height();
-    if (!nw || !rw) {
+    var m = getCvImageContentMetrics(el);
+    if (!m) {
       return null;
     }
-    var rx = nw / rw;
-    var ry = nh / rh;
+    var ref = resolveOcrReferenceSize(data, resp, lines, m.nw, m.nh);
+    /* Scale from OCR pixel space → displayed &lt;img&gt; CSS pixels (then object-fit offsets) */
+    var sx = m.fitScale * (m.nw / ref.refW);
+    var sy = m.fitScale * (m.nh / ref.refH);
     var HEIGHT_PAD = 5;
     var html = '';
+    var fsMin = 8;
     for (var i = 0, len = lines.length; i < len; i++) {
       var line = lines[i];
+      if (!line || !line.length) {
+        continue;
+      }
       for (var w = 0, wl = line.length; w < wl; w++) {
         var info = line[w];
-        var box = info.box || [];
-        var fb = [0, 0];
-        var p0 = box[0] || fb;
-        var p2 = box[2] || fb;
-        var left = Math.round(p0[0] / rx);
-        var top = Math.round((p0[1] - 2) / ry);
-        var width = Math.round((p2[0] - p0[0]) / rx);
-        var rawH = p2[1] - p0[1];
-        var height = Math.round((rawH + HEIGHT_PAD) / ry);
-        var fs = Math.floor((rawH - HEIGHT_PAD) / ry);
+        var box = (info && info.box) || [];
+        var bb = extractWordBboxFromBox(box);
+        if (!bb) {
+          continue;
+        }
+        var left = Math.round(m.offsetX + bb.x * sx);
+        var top = Math.round(m.offsetY + (bb.y - 2) * sy);
+        var width = Math.round(bb.w * sx);
+        var rawH = bb.h;
+        var height = Math.round((rawH + HEIGHT_PAD) * sy);
+        var fs = Math.max(fsMin, Math.floor((rawH - HEIGHT_PAD) * sy));
         var br = (w === wl - 1) ? '<br>' : '';
-        html += '<span class="cv-extract-word" style="left:' + left + 'px;top:' + top + 'px;width:' + width + 'px;height:' + height + 'px;font-size:' + fs + 'px">' + escHtml(info.word || '') + ' ' + br + '</span>';
+        html += '<span class="cv-extract-word" style="left:' + left + 'px;top:' + top + 'px;width:' + width + 'px;height:' + height + 'px;font-size:' + fs + 'px">' + escHtml((info && info.word) || '') + ' ' + br + '</span>';
       }
     }
     if (!html) {
       return null;
     }
-    return $('<div class="cv-extract-overlay"><div class="cv-extract-layer">' + html + '</div></div>');
+    var $overlay = $('<div class="cv-extract-overlay"><div class="cv-extract-layer">' + html + '</div></div>');
+    $overlay.find('.cv-extract-layer').css({
+      width: m.cw,
+      height: m.ch
+    });
+    return $overlay;
   }
 
   function removeExtractOverlay ($stage) {
@@ -3075,7 +3495,7 @@
       Overlay.$loader.removeClass('cv-active');
       $wrap.remove();
       $stage.empty();
-      showError($stage, 'image', 'Image could not be loaded', item, { noDownload: !getItemDownloadUrl(item) });
+      showError($stage, 'image', 'Image could not be loaded', item, { noDownload: !getItemDownloadUrl(item, inst) });
       if (inst) {
         Overlay._resolveToolbar(inst, { imageError: true });
       }
@@ -4220,6 +4640,10 @@
       });
     }, function () {
       Overlay.$loader.removeClass('cv-active');
+      /* Remove shell so .cv-error-card is not a flex sibling of .cv-pdf-wrap (row layout pushed error to the side). */
+      if ($container && $container.length) {
+        $container.remove();
+      }
       showError($stage, 'pdf', 'PDF could not be loaded', item);
     });
 
@@ -4492,15 +4916,15 @@
 
   function inlineRawToHtml (text) {
     var lines = (isNullish(text) ? '' : String(text)).split(/\r\n|\n|\r/);
-    var html = '';
-    for (var i = 0; i < lines.length; i++) {
-      html += '<div class="cv-inline-line">' +
-        '<span class="cv-inline-num">' + (i + 1) + '</span>' +
-        '<span class="cv-inline-code">' + escHtml(lines[i]) + '</span>' +
-        '</div>';
+      var html = '';
+      for (var i = 0; i < lines.length; i++) {
+        html += '<div class="cv-inline-line">' +
+          '<span class="cv-inline-num">' + (i + 1) + '</span>' +
+          '<span class="cv-inline-code">' + escHtml(lines[i]) + '</span>' +
+          '</div>';
+      }
+      return html;
     }
-    return html;
-  }
 
   function getInlineLanguage (item, inst) {
     if (inst && inst.opts && inst.opts.inline && typeof inst.opts.inline.getLanguage === 'function') {
@@ -4601,7 +5025,7 @@
   function buildUnsupportedCard (item, message, $stage) {
     var ext = (item.fileExt || (item.title || '').split('.').pop() || '').toUpperCase();
     var size = item.fileSize || '';
-    var showDl = Boolean(item.src || item.downloadUrl);
+    var showDl = Boolean(getItemDownloadUrl(item, Overlay.activeInstance));
     var $card = $(
       '<div class="cv-unsupported">' +
         '<div class="cv-unsupported-icon">' + Icons.fileIcon + '</div>' +
@@ -4631,11 +5055,49 @@
 
   /* --- BUILT-IN: HTML --- */
 
+  /** True when item is html and filename/path suggests markdown (.md / .markdown). */
+  function isHtmlMarkdownFileItem (item, inst) {
+    if (!item || item.type !== 'html') {
+      return false;
+    }
+    var ext = String(item.fileExt || '').toLowerCase().replace(/^\./, '');
+    if (ext === 'md' || ext === 'markdown') {
+      return true;
+    }
+    if (/\.(md|markdown)$/i.test(String(item.title || ''))) {
+      return true;
+    }
+    var src = String((inst ? (getResolvedSrcUrl(item, inst) || item.src) : item.src) || '');
+    return (/\.(md|markdown)(\?|#|$)/i).test(src);
+  }
+
+  function htmlItemHasIframeSrc (item, inst) {
+    var src = getResolvedSrcUrl(item, inst) || item.src;
+    return Boolean(src && isSafeResourceUrl(src));
+  }
+
+  function shouldShowHtmlMdSourceToolbarButton (item, inst) {
+    if (!inst || !inst.opts) {
+      return false;
+    }
+    var tb = inst.opts.toolbar || {};
+    if (tb.toggleSource !== true) {
+      return false;
+    }
+    if (typeof inst.opts.resolveMarkdownToggleUrl !== 'function') {
+      return false;
+    }
+    return isHtmlMarkdownFileItem(item, inst) && htmlItemHasIframeSrc(item, inst);
+  }
+
   function builtInHtmlRenderer (item, $stage) {
     var inst = Overlay.activeInstance;
     var src = getResolvedSrcUrl(item, inst) || item.src;
     var html = item.html;
     if (src && isSafeResourceUrl(src)) {
+      if (inst) {
+        inst._htmlMdShowingSource = false;
+      }
       var titleAttr = (!isNullish(item.title) && String(item.title).trim() !== '') ? String(item.title).trim().replace(/"/g, '&quot;') : '';
       /* Full-stage iframe: .cv-stage-iframe is the embed hook (similar role to Colorbox .cboxIframe; do not reuse that class name). */
       var $wrap = $('<div class="cv-html-iframe-wrap cv-html-iframe-loading"></div>');
@@ -4800,7 +5262,7 @@
 
   function builtInErrorCard ($stage, message, item, options) {
     options = options || {};
-    var showDl = !options.noDownload && getItemDownloadUrl(item);
+    var showDl = !options.noDownload && getItemDownloadUrl(item, Overlay.activeInstance);
     var $card = $(
       '<div class="cv-error-card">' + Icons.error +
         '<p class="cv-error-text">' + escHtml(message) + '</p>' +
@@ -4829,8 +5291,20 @@
     } else {
       this.opts.stageOnly = $.extend({}, DEFAULTS.stageOnly);
     }
+    var minCfg = this.opts.minimize;
+    if (minCfg === true || minCfg === false) {
+      this.opts.minimize = { enabled: Boolean(minCfg) };
+    } else if (minCfg && typeof minCfg === 'object') {
+      this.opts.minimize = $.extend({}, DEFAULTS.minimize, minCfg);
+    } else {
+      this.opts.minimize = $.extend({}, DEFAULTS.minimize);
+    }
     this.items = []; this.idx = 0; this._currentResult = null;
-    this._collectItems(); this._bindClicks();
+    var cvSelf = this;
+    this._beforeCollectContext = { trigger: 'init' };
+    this._collectItems(function () {
+      cvSelf._bindClicks();
+    });
   }
   ComponentViewer._counter = 0;
 
@@ -4848,7 +5322,32 @@
       }
       return -1;
     },
-    _collectItems: function () {
+    /**
+     * Rebuild inst.items from opts.items (if non-empty array) or from DOM (.cv-item etc.).
+     * When opts.beforeCollectItems is set, it runs first; pass done to run after collection (required for async hook).
+     */
+    _collectItems: function (done) {
+      var self = this;
+      var finish = function () {
+        self._doCollectItems();
+        self._beforeCollectContext = null;
+        if (typeof done === 'function') {
+          done();
+        }
+      };
+      var bci = self.opts.beforeCollectItems;
+      if (typeof bci === 'function') {
+        if (bci.length >= 2) {
+          bci(self, finish);
+        } else {
+          bci(self);
+          finish();
+        }
+      } else {
+        finish();
+      }
+    },
+    _doCollectItems: function () {
       var self = this;
       this.items = [];
       if (self.opts.items && Array.isArray(self.opts.items) && self.opts.items.length > 0) {
@@ -4864,7 +5363,7 @@
           type: defaultType,
           src: src,
           title: $el.data('title') || $el.attr('title') || '',
-          downloadUrl: $el.data('download') || null,
+          downloadUrl: $el.data('download') || $el.attr('data-download') || null,
           zoomUrl: $el.data('zoomurl') || $el.data('zoom-url') || null,
           fileExt: $el.data('ext') || null,
           fileSize: $el.data('size') || null,
@@ -4919,130 +5418,146 @@
         }
         e.preventDefault();
         e.stopImmediatePropagation();
-        self._collectItems();
-        var item = null;
-        for (var i = 0; i < self.items.length; i++) {
-          if (self.items[i].$el && self.items[i].$el[0] === $matched[0]) {
-            item = self.items[i];
-            break;
+        self._beforeCollectContext = { trigger: 'click', $element: $matched, originalEvent: e };
+        self._collectItems(function () {
+          var item = null;
+          for (var i = 0; i < self.items.length; i++) {
+            if (self.items[i].$el && self.items[i].$el[0] === $matched[0]) {
+              item = self.items[i];
+              break;
+            }
           }
-        }
-        if (!item && self.items.length > 0) {
-          item = self.items[0];
-        }
-        if (typeof self.opts.beforeOpen !== 'function') {
-          self._openContext = {};
-        }
-        self.open($matched);
+          if (!item && self.items.length > 0) {
+            item = self.items[0];
+          }
+          if (typeof self.opts.beforeOpen !== 'function') {
+            self._openContext = {};
+          }
+          if (Overlay.visible && Overlay.activeInstance === self && Overlay._minimized) {
+            Overlay._applyMinimizedUi(self, false);
+          }
+          self.open($matched);
+        });
       };
       this._containerCaptureClick = handler;
       containerEl.addEventListener('click', handler, true);
     },
     open: function (indexOrElement) {
-      this._collectItems();
-      if (this.items.length === 0) {
-        return;
-      }
       var self = this;
-      var idx = 0;
-      if (indexOrElement !== undefined && indexOrElement !== null) {
-        if (typeof indexOrElement === 'number') {
-          idx = Math.max(0, Math.min(indexOrElement, this.items.length - 1));
-        } else {
-          var el = indexOrElement && indexOrElement.jquery ? indexOrElement[0] : indexOrElement;
-          for (var i = 0; i < this.items.length; i++) {
-            if (this.items[i].$el && this.items[i].$el[0] === el) {
-              idx = i;
-              break;
+      this._beforeCollectContext = { trigger: 'open', openArg: indexOrElement };
+      this._collectItems(function () {
+        if (self.items.length === 0) {
+          return;
+        }
+        var idx = 0;
+        if (indexOrElement !== undefined && indexOrElement !== null) {
+          if (typeof indexOrElement === 'number') {
+            idx = Math.max(0, Math.min(indexOrElement, self.items.length - 1));
+          } else {
+            var el = indexOrElement && indexOrElement.jquery ? indexOrElement[0] : indexOrElement;
+            for (var i = 0; i < self.items.length; i++) {
+              if (self.items[i].$el && self.items[i].$el[0] === el) {
+                idx = i;
+                break;
+              }
             }
           }
         }
-      }
-      var item = this.items[idx];
-      var $matched = (item && item.$el && item.$el.length) ? item.$el : $();
-      if (typeof this.opts.beforeOpen === 'function') {
-        this.idx = idx;
-        this._slideshowPaused = false;
-        this._slideshowPlaying = false;
-        this._beforeOpenPhase = 'loading';
-        this._pendingGateContent = null;
-        this._openContext = {};
-        Overlay.open(this);
-        setTimeout(function () {
-          if (typeof self.opts.beforeOpen !== 'function') {
-            return;
-          }
-          self.opts.beforeOpen(item, $matched, function (arg) {
-            if (arg && arg.gateContent) {
-              self._pendingGateContent = arg.gateContent;
-              self._openContext = {};
-            } else {
-              self._openContext = arg || {};
-              self._pendingGateContent = null;
+        var item = self.items[idx];
+        var $matched = (item && item.$el && item.$el.length) ? item.$el : $();
+        if (typeof self.opts.beforeOpen === 'function') {
+          self.idx = idx;
+          self._slideshowPaused = false;
+          self._slideshowPlaying = false;
+          self._beforeOpenPhase = 'loading';
+          self._pendingGateContent = null;
+          self._openContext = {};
+          Overlay.open(self);
+          setTimeout(function () {
+            if (typeof self.opts.beforeOpen !== 'function') {
+              return;
             }
-            Overlay._finishBeforeOpenProceed(self);
-          });
-        }, 0);
-        return;
-      }
-      this.idx = idx;
-      this._slideshowPaused = false;
-      this._slideshowPlaying = false;
-      this._openContext = {};
-      Overlay.open(this);
+            self.opts.beforeOpen(item, $matched, function (arg) {
+              if (arg && arg.gateContent) {
+                self._pendingGateContent = arg.gateContent;
+                self._openContext = {};
+              } else {
+                self._openContext = arg || {};
+                self._pendingGateContent = null;
+              }
+              Overlay._finishBeforeOpenProceed(self);
+            });
+          }, 0);
+          return;
+        }
+        self.idx = idx;
+        self._slideshowPaused = false;
+        self._slideshowPlaying = false;
+        self._openContext = {};
+        Overlay.open(self);
+      });
     },
     close: function () {
       Overlay.close();
     },
     next: function (opts) {
-      this._collectItems();
-      if (this.items.length < 2) {
-        return;
-      }
-      if (this._slideshowTimer) {
-        clearTimeout(this._slideshowTimer); this._slideshowTimer = null;
-      }
-      var currentItem = this.items[this.idx];
-      var currentIdx = (currentItem && currentItem.$el) ? this._indexOfItemByElement(currentItem.$el) : this.idx;
-      if (currentIdx < 0) {
-        currentIdx = 0;
-      }
-      this._firePrevClose(this.items[currentIdx]);
-      this.idx = this.opts.loop ? (currentIdx + 1) % this.items.length : Math.min(this.items.length - 1, currentIdx + 1);
-      Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      var self = this;
+      this._beforeCollectContext = { trigger: 'next' };
+      this._collectItems(function () {
+        if (self.items.length < 2) {
+          return;
+        }
+        if (self._slideshowTimer) {
+          clearTimeout(self._slideshowTimer); self._slideshowTimer = null;
+        }
+        var currentItem = self.items[self.idx];
+        var currentIdx = (currentItem && currentItem.$el) ? self._indexOfItemByElement(currentItem.$el) : self.idx;
+        if (currentIdx < 0) {
+          currentIdx = 0;
+        }
+        self._firePrevClose(self.items[currentIdx]);
+        self.idx = self.opts.loop ? (currentIdx + 1) % self.items.length : Math.min(self.items.length - 1, currentIdx + 1);
+        Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      });
     },
     prev: function (opts) {
-      this._collectItems();
-      if (this.items.length < 2) {
-        return;
-      }
-      if (this._slideshowTimer) {
-        clearTimeout(this._slideshowTimer); this._slideshowTimer = null;
-      }
-      var currentItem = this.items[this.idx];
-      var currentIdx = (currentItem && currentItem.$el) ? this._indexOfItemByElement(currentItem.$el) : this.idx;
-      if (currentIdx < 0) {
-        currentIdx = this.items.length - 1;
-      }
-      this._firePrevClose(this.items[currentIdx]);
-      this.idx = this.opts.loop ? (currentIdx - 1 + this.items.length) % this.items.length : Math.max(0, currentIdx - 1);
-      Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      var self = this;
+      this._beforeCollectContext = { trigger: 'prev' };
+      this._collectItems(function () {
+        if (self.items.length < 2) {
+          return;
+        }
+        if (self._slideshowTimer) {
+          clearTimeout(self._slideshowTimer); self._slideshowTimer = null;
+        }
+        var currentItem = self.items[self.idx];
+        var currentIdx = (currentItem && currentItem.$el) ? self._indexOfItemByElement(currentItem.$el) : self.idx;
+        if (currentIdx < 0) {
+          currentIdx = self.items.length - 1;
+        }
+        self._firePrevClose(self.items[currentIdx]);
+        self.idx = self.opts.loop ? (currentIdx - 1 + self.items.length) % self.items.length : Math.max(0, currentIdx - 1);
+        Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      });
     },
     goTo: function (index, opts) {
-      this._collectItems();
-      if (this.items.length === 0) {
-        return;
-      }
-      var idx = Math.max(0, Math.min(index, this.items.length - 1));
-      if (idx === this.idx) {
-        return;
-      }
-      if (this._slideshowTimer) {
-        clearTimeout(this._slideshowTimer); this._slideshowTimer = null;
-      }
-      this._firePrevClose(this.items[this.idx]);
-      this.idx = idx;
-      Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      var self = this;
+      this._beforeCollectContext = { trigger: 'goTo', index: index };
+      this._collectItems(function () {
+        if (self.items.length === 0) {
+          return;
+        }
+        var idx = Math.max(0, Math.min(index, self.items.length - 1));
+        if (idx === self.idx) {
+          return;
+        }
+        if (self._slideshowTimer) {
+          clearTimeout(self._slideshowTimer); self._slideshowTimer = null;
+        }
+        self._firePrevClose(self.items[self.idx]);
+        self.idx = idx;
+        Overlay.loadItem((opts && opts.transition) ? { transition: true } : undefined);
+      });
     },
     currentItem: function () {
       return this.items[this.idx];
@@ -5053,7 +5568,7 @@
       }
       this.opts.theme = theme;
       if (Overlay.activeInstance === this) {
-        Overlay.$el[0].className = 'cv-overlay cv-theme-' + theme;
+        Overlay.$el[0].className = buildOverlayClassName(theme, Overlay.visible, Overlay.$el.hasClass('cv-closing'), this);
         Overlay._syncThemeToggle();
       }
       if (typeof this.opts.onThemeChange === 'function') {
@@ -5062,12 +5577,17 @@
     },
     refresh: function () {
       var wasOpen = Overlay.visible && Overlay.activeInstance === this;
-      this._collectItems(); this._bindClicks();
-      if (wasOpen && this.items.length) {
-        this.idx = Math.min(this.idx, this.items.length - 1); Overlay.loadItem();
-      } else if (wasOpen) {
-        this.close();
-      }
+      var self = this;
+      this._beforeCollectContext = { trigger: 'refresh' };
+      this._collectItems(function () {
+        self._bindClicks();
+        if (wasOpen && self.items.length) {
+          self.idx = Math.min(self.idx, self.items.length - 1);
+          Overlay.loadItem();
+        } else if (wasOpen) {
+          self.close();
+        }
+      });
     },
     /** Show the circle loader over the stage. No-op if this instance is not the active viewer. */
     showLoader: function () {

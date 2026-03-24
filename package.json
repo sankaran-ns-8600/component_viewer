@@ -1,6 +1,6 @@
 {
   "name": "@sankaran-8600/component-viewer",
-  "version": "1.0.6",
+  "version": "1.0.1",
   "description": "jQuery plugin for attachment and media preview in an overlay",
   "main": "component-viewer.js",
   "style": "component-viewer.css",
@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "minify": "npx terser component-viewer.js -o component-viewer.min.js -c passes=2,collapse_vars=true,reduce_vars=true -m --comments false",
-    "build": "npm run minify",
+    "minify:japanese": "npx terser component-viewer-japanese.js -o component-viewer-japanese.min.js -c passes=2,collapse_vars=true,reduce_vars=true -m --comments false",
+    "build": "npm run minify && npm run minify:japanese",
     "lint": "eslint component-viewer.js",
     "lint:codecheck": "eslint component-viewer.codecheck.js",
     "codecheck": "npm run lint && npm run lint:codecheck"

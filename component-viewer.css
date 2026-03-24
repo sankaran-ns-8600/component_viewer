@@ -315,7 +315,8 @@
 .cv-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .cv-theme-toggle,
 .cv-fullscreen-toggle,
-.cv-comment-toggle {
+.cv-comment-toggle,
+.cv-minimize-toggle {
   background: rgba(255,255,255,.14); border: none; color: #e0e0e0;
   width: 36px; height: 36px; min-width: 36px; min-height: 36px;
   flex-shrink: 0; aspect-ratio: 1; border-radius: 6px; cursor: pointer;
@@ -324,13 +325,16 @@
 }
 .cv-theme-toggle:hover,
 .cv-fullscreen-toggle:hover,
-.cv-comment-toggle:hover { background: rgba(255,255,255,.2); }
+.cv-comment-toggle:hover,
+.cv-minimize-toggle:hover { background: rgba(255,255,255,.2); }
 .cv-theme-toggle:focus-visible,
 .cv-fullscreen-toggle:focus-visible,
-.cv-comment-toggle:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+.cv-comment-toggle:focus-visible,
+.cv-minimize-toggle:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
 .cv-theme-toggle svg,
 .cv-fullscreen-toggle svg,
-.cv-comment-toggle svg { width: 18px; height: 18px; display: block; }
+.cv-comment-toggle svg,
+.cv-minimize-toggle svg { width: 18px; height: 18px; display: block; }
 .cv-comment-toggle.cv-active,
 .cv-comment-toggle[aria-expanded="true"] { background: rgba(66,133,244,.4); color: rgba(255,255,255,.95); }
 .cv-comment-toggle.cv-active:hover,
@@ -344,6 +348,45 @@
 }
 .cv-close:hover { background: rgba(255,255,255,.2); }
 .cv-close:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+
+/* Minimize: keep overlay alive while letting page interactions continue */
+.cv-overlay.cv-minimized {
+  background: transparent;
+  pointer-events: none;
+}
+.cv-overlay.cv-minimized .cv-backdrop,
+.cv-overlay.cv-minimized .cv-shell {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.cv-restore-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483647;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(17,17,17,.92);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.cv-restore-fab:hover { background: rgba(40,40,40,.96); }
+.cv-restore-fab:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+.cv-theme-light .cv-restore-fab {
+  background: #1a73e8;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.35);
+  box-shadow: 0 6px 18px rgba(26,115,232,.45);
+}
+.cv-theme-light .cv-restore-fab:hover { background: #1765cc; }
 
 /* ── tooltip (hover, not title attribute) ──────────────────────────────── */
 .cv-tooltip {
@@ -1491,6 +1534,26 @@
 .cv-markdown-body a { color: #0969da; text-decoration: none; }
 .cv-markdown-body a:hover { text-decoration: underline; }
 
+/* ── rtl mode (isRTL: true) ─────────────────────────────────────────── */
+.cv-overlay.cv-rtl .cv-nav-prev { right: 18px; left: auto; }
+.cv-overlay.cv-rtl .cv-nav-next { left: 18px; right: auto; }
+.cv-overlay.cv-rtl .cv-comment-wrap { left: 16px; right: auto; }
+.cv-overlay.cv-rtl .cv-restore-fab { left: 18px; right: auto; }
+.cv-overlay.cv-rtl .cv-carousel { direction: rtl; }
+.cv-overlay.cv-rtl .cv-carousel-prev { order: 3; }
+.cv-overlay.cv-rtl .cv-carousel { order: 2; }
+.cv-overlay.cv-rtl .cv-carousel-next { order: 1; }
+.cv-overlay.cv-rtl .cv-nav svg,
+.cv-overlay.cv-rtl .cv-carousel-nav svg,
+.cv-overlay.cv-rtl .cv-comment-prev svg,
+.cv-overlay.cv-rtl .cv-comment-next svg { transform: scaleX(-1); }
+.cv-overlay.cv-rtl .cv-poll-option-updated { margin-left: 0; margin-right: 10px; }
+.cv-overlay.cv-rtl .cv-pdf-sidebar { border-right: none; border-left: 1px solid rgba(255,255,255,.08); }
+.cv-overlay.cv-rtl .cv-pdf-thumb-num { left: 4px; right: auto; }
+.cv-overlay.cv-rtl .cv-pdf-zoom-select { padding: 2px 8px 2px 24px; background-position: left 6px center; }
+.cv-overlay.cv-rtl .cv-markdown-body { direction: rtl; text-align: right; }
+.cv-theme-light.cv-rtl .cv-pdf-sidebar { border-left-color: rgba(0,0,0,.08); }
+
 /* ═══════════════════════════════════════════════════════════════════════
    UNSUPPORTED / ERROR
    ═══════════════════════════════════════════════════════════════════════ */
@@ -1512,6 +1575,28 @@
 .cv-unsupported-dl:hover { background: rgba(66,133,244,.35); }
 .cv-unsupported-dl svg { width: 16px; height: 16px; }
 
+/*
+ * Built-in error / unsupported: center on stage for all viewer types.
+ * .cv-stage-pdf uses row flex + align-items:stretch — siblings (e.g. .cv-pdf-wrap + .cv-error-card)
+ * would otherwise push the message sideways; absolute centering is stable everywhere.
+ */
+.cv-stage > .cv-error-card,
+.cv-stage > .cv-unsupported {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 15; /* above stage content; below .cv-loader (20) */
+  max-width: min(480px, calc(100% - 32px));
+  width: fit-content;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+/* Stage fade-in hides direct children — keep error/unsupported visible when they are the only UI */
+.cv-stage.cv-stage-in > .cv-error-card,
+.cv-stage.cv-stage-in > .cv-unsupported {
+  opacity: 1;
+}
 .cv-error-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: rgba(255,255,255,.45); }
 .cv-error-card svg { opacity: .35; }
 .cv-error-text { font-size: 15px; margin: 0; }

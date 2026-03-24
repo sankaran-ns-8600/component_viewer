@@ -1395,6 +1395,76 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 29: RTL mode (isRTL: true)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 29 — RTL mode (<code>isRTL: true</code>)</div>
+<p class="section-desc">
+  Sets <code>isRTL: true</code> to render the overlay in RTL mode. This mirrors navigation placement,
+  carousel controls/direction, and keyboard/swipe prev-next mapping while keeping the same item data flow.
+</p>
+
+<pre>
+$(<span class="str">'#post-rtl'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">isRTL</span>: <span class="kw">true</span>,
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-rtl">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-right-left"></i></div>
+    <div><div class="post-author">RTL demo</div><div class="post-time">Case 29</div></div>
+  </div>
+  <div class="post-body">Open any item and verify RTL behavior for arrows, swipe, carousel, and tooltips.</div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="RTL-A.jpg" href="https://picsum.photos/id/10/1600/1000"><img src="https://picsum.photos/id/10/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="RTL-B.jpg" href="https://picsum.photos/id/29/1600/1000"><img src="https://picsum.photos/id/29/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="RTL-C.jpg" href="https://picsum.photos/id/17/1600/1000"><img src="https://picsum.photos/id/17/300/200" alt="" /></a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE 30: Minimize + restore (with hidden bound element fallback)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section-title">Case 30 — Minimize and restore</div>
+<p class="section-desc">
+  Enable <code>minimize: { enabled: true }</code> to show a header minimize button. Minimizing collapses the viewer to a floating restore icon.
+  Click the icon to restore the current item. If the bound element becomes hidden while minimized, restore still shows the captured item snapshot.
+  If you click another attachment while minimized, the viewer expands and loads that clicked item.
+</p>
+
+<pre>
+$(<span class="str">'#post-minimize'</span>).<span class="fn">componentViewer</span>({
+  <span class="kw">minimize</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">carousel</span>: { <span class="kw">enabled</span>: <span class="kw">true</span> },
+  <span class="kw">toolbar</span>: { <span class="kw">download</span>: <span class="kw">true</span>, <span class="kw">zoom</span>: <span class="kw">true</span> }
+});
+</pre>
+
+<div class="post" id="post-minimize">
+  <div class="post-header">
+    <div class="post-avatar"><i class="fa-solid fa-window-minimize"></i></div>
+    <div><div class="post-author">Minimize demo</div><div class="post-time">Case 30</div></div>
+  </div>
+  <div class="post-body">
+    Open an item, click minimize, then either restore via the floating button or click another attachment directly.
+    Use the "Toggle 2nd item visibility" button to test hidden-element restore fallback.
+  </div>
+  <div class="post-attachments">
+    <a class="att cv-item" data-type="image" data-title="Min-A.jpg" href="https://picsum.photos/id/1018/1600/1000"><img src="https://picsum.photos/id/1018/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Min-B.jpg" href="https://picsum.photos/id/1015/1600/1000"><img src="https://picsum.photos/id/1015/300/200" alt="" /></a>
+    <a class="att cv-item" data-type="image" data-title="Min-C.jpg" href="https://picsum.photos/id/1016/1600/1000"><img src="https://picsum.photos/id/1016/300/200" alt="" /></a>
+  </div>
+  <div class="demo-actions" style="margin-top:10px; display:flex; gap:8px;">
+    <button class="api-btn" id="case30-toggle-visibility" type="button">Toggle 2nd item visibility</button>
+    <button class="api-btn" id="case30-show-all" type="button">Show all items</button>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="section-title">Programmatic API</div>
 <div class="api-buttons">
@@ -1467,6 +1537,8 @@ $(<span class="str">'#post-slideshow-progress'</span>).<span class="fn">componen
   <button class="api-btn" onclick="$('#post-no-tooltip').componentViewer('open', 0)">Case26: No tooltips</button>
   <button class="api-btn" onclick="$('#post-gif').componentViewer('open', 0)">Case27: GIF</button>
   <button class="api-btn" onclick="$('#post-slideshow-progress').componentViewer('open', 0)">Case28: Slideshow + progress</button>
+  <button class="api-btn" onclick="$('#post-rtl').componentViewer('open', 0)">Case29: RTL</button>
+  <button class="api-btn" onclick="$('#post-minimize').componentViewer('open', 0)">Case30: Minimize</button>
 </div>
 
 <div class="section-title">How It All Fits Together</div>
@@ -2302,6 +2374,35 @@ $(<span class="str">'#post'</span>).<span class="fn">componentViewer</span>({
     slideshow: { enabled: true, interval: 4, autoStart: false, showProgress: true, advanceMedia: 'interval' },
     toolbar: { download: true, zoom: true },
     onOpen: function(item) { log('Case28 onOpen [slideshow+progress] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 29: RTL mode (isRTL: true)
+     ═══════════════════════════════════════════════════════════════ */
+
+  $('#post-rtl').componentViewer({
+    isRTL: true,
+    carousel: { enabled: true },
+    toolbar: { download: true, zoom: true },
+    onOpen: function(item) { log('Case29 onOpen [rtl] ' + item.title); }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     CASE 30: Minimize + restore
+     ═══════════════════════════════════════════════════════════════ */
+  $('#post-minimize').componentViewer({
+    minimize: { enabled: true },
+    carousel: { enabled: true },
+    toolbar: { download: true, zoom: true },
+    onOpen: function(item) { log('Case30 onOpen [minimize] ' + item.title); }
+  });
+  $('#case30-toggle-visibility').on('click', function () {
+    $('#post-minimize .cv-item').eq(1).toggle();
+    log('Case30 toggled visibility for item 2');
+  });
+  $('#case30-show-all').on('click', function () {
+    $('#post-minimize .cv-item').show();
+    log('Case30 restored visibility for all items');
   });
 
 })();
